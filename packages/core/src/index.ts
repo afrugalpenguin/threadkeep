@@ -4,3 +4,8 @@ export * from './lock.js';
 export * from './store/db.js';
 export * from './adapters/types.js';
 export * from './adapters/registry.js';
+export * from './ids.js';
+export * from './ingest.js';
+export * from './redaction/index.js';
+export { claudeCodeAdapter } from './adapters/claude-code/index.js';
+export * as claudeCodeFixtures from './adapters/claude-code/fixtures.js';
