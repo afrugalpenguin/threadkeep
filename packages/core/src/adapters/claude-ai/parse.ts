@@ -1,4 +1,4 @@
-import { stableId, titleFromText, TOOL_OUTPUT_SEPARATOR } from '../../ids.js';
+import { stableId, TOOL_OUTPUT_SEPARATOR } from '../../ids.js';
 import { pathsFrom, summariseToolInput } from '../claude-code/parse.js';
 import type { EventOut, ParseResult } from '../types.js';
 
@@ -189,8 +189,8 @@ export function parseConversation(conversation: Json, position: number): ParseRe
   }
 
   const session: ParseResult['sessions'][number] = { sessionId: conversationId };
-  const title = name.length > 0 ? name : firstHumanText !== null ? titleFromText(firstHumanText) : '';
-  if (title.length > 0) session.title = { value: title, updatedAt };
+  if (name.length > 0) session.title = { value: name, updatedAt };
+  else if (firstHumanText !== null) session.title = { value: firstHumanText, updatedAt, fallback: true };
   result.sessions.push(session);
   return result;
 }

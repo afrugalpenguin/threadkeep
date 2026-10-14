@@ -235,7 +235,10 @@ export function writeParsed(
     if (update.cwd) setCwd.run(update.cwd, update.sessionId);
     if (update.aiTitle) setTitle.run(redactText(update.aiTitle), update.sessionId);
     if (update.title) {
-      setSourceTitle.run(redactText(update.title.value), update.title.updatedAt, update.sessionId, update.title.updatedAt);
+      // Redact the full text first, then truncate, so a secret straddling the cut cannot survive.
+      const redacted = redactText(update.title.value) ?? '';
+      const value = update.title.fallback ? titleFromText(redacted) : redacted;
+      setSourceTitle.run(value, update.title.updatedAt, update.sessionId, update.title.updatedAt);
     }
   }
   return counts;
@@ -254,13 +257,13 @@ export function refreshSessions(db: Db, ids: Iterable<string>): void {
     `update sessions set title = ? where id = ? and (title is null or title = '')`,
   );
   const firstUser = db.prepare(
-    `select content from events where session_id = ? and role = 'user' and kind = 'text' and content != ''
+    `select content_redacted as content from events where session_id = ? and role = 'user' and kind = 'text' and content != ''
      order by timestamp, rowid limit 1`,
   );
   for (const id of ids) {
     stats.run(id);
     const row = firstUser.get(id) as { content: string } | undefined;
-    if (row) fallback.run(redactText(titleFromText(row.content)), id);
+    if (row) fallback.run(titleFromText(row.content), id);
   }
 }
 

@@ -56,7 +56,7 @@ export interface SessionUpdate {
   cwd?: string;
   aiTitle?: string;
   // Authoritative title with the source's own edit time, newest wins.
-  title?: { value: string; updatedAt: string };
+  title?: { value: string; updatedAt: string; fallback?: boolean };
 }
 
 export interface ParseResult {
