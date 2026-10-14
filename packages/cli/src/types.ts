@@ -11,6 +11,8 @@ export interface Io {
 
 export interface CommandEnv {
   io: Io;
+  // Aborts long-running commands such as watch.
+  signal?: AbortSignal;
   env: Record<string, string | undefined>;
   // Loads (and on first run creates) the data dir, printing where config was created.
   context(home: string | undefined): HansardContext;

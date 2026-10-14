@@ -39,6 +39,7 @@ export async function run(
   argv: string[],
   io: Io,
   env: Record<string, string | undefined> = process.env,
+  signal?: AbortSignal,
 ): Promise<number> {
   const [name, ...rest] = argv;
   if (name === undefined || name === '--help' || name === '-h' || name === 'help') {
@@ -53,6 +54,7 @@ export async function run(
   const commandEnv: CommandEnv = {
     io,
     env,
+    ...(signal ? { signal } : {}),
     context(home) {
       const options: Parameters<typeof loadContext>[0] = { env, userHome: userHomeFrom(env) };
       if (home) options.home = home;
