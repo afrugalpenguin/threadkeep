@@ -25,6 +25,8 @@ export interface ImportReport {
 
 export interface ImportOptions {
   waitMs?: number;
+  // Called with a running conversation count every 100 conversations.
+  onProgress?: (conversations: number) => void;
 }
 
 // Parts of a full export that have no adapter yet. The same archive layout will host them later.
@@ -171,6 +173,7 @@ export async function importClaudeAi(
     fs.mkdirSync(archiveDir(ctx), { recursive: true });
     writeMachineArchiveFile(ctx);
     const db = openDb(ctx.dbPath);
+    let done = 0;
     try {
       for (const candidate of found) {
         const name = path.basename(candidate.file);
@@ -237,7 +240,10 @@ export async function importClaudeAi(
           failedFiles: 0,
           warnings: [],
         };
-        await ingestArchive(ctx, db, [{ adapter: claudeAiAdapter, file }], result, {});
+        await ingestArchive(ctx, db, [{ adapter: claudeAiAdapter, file }], result, {
+          onRecords: (n) => options.onProgress?.(done + n),
+        });
+        done += result.newRaw;
         report.warnings.push(...result.warnings);
         report.newConversations += result.newRaw;
         report.newEvents += result.newEvents;

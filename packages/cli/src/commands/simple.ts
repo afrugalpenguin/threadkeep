@@ -119,7 +119,10 @@ export const importCommand: Command = async (args, env) => {
   const report = await importClaudeAi(
     ctx,
     positionals.map((p) => path.resolve(p)),
-    { waitMs: intFlag(values['wait'], 'wait', 30_000) },
+    {
+      waitMs: intFlag(values['wait'], 'wait', 30_000),
+      onProgress: (n) => env.io.stdout.write(`progress ${n} conversations\n`),
+    },
   );
   const out = (s: string) => env.io.stdout.write(s);
   for (const info of report.infos) out(`${info}

@@ -115,6 +115,16 @@ describe('claude.ai import', () => {
     expect(JSON.parse(String(imports[0]?.['counts']))).toMatchObject({ conversations: 3, newEvents: 9 });
   });
 
+  it('reports progress every 100 conversations', async () => {
+    const m = makeMachine();
+    const many = Array.from({ length: 250 }, (_, i) =>
+      conversation(`c-${String(i).padStart(4, '0')}`, `Demo conversation ${i}`, [message(`m-${i}`, 'human', 1, { content: [textBlock('hello', 1)] })]),
+    );
+    const seen: number[] = [];
+    await importClaudeAi(m.ctx, [await exportZip(tempDir(), 'many.zip', many)], { onProgress: (n) => seen.push(n) });
+    expect(seen).toEqual([100, 200]);
+  });
+
   it('importing the same zip twice is a no-op', async () => {
     const m = makeMachine();
     const zip = await exportZip(tempDir(), 'export.zip', sampleExport());

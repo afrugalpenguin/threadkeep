@@ -26,6 +26,7 @@ describe('import claude-ai', () => {
     expect(first.code).toBe(0);
     expect(first.out).toContain('imported 1 exports, 3 new conversations, 9 new events, 0 updated events, 0 already imported');
     expect(first.out + first.err).not.toContain(box.base);
+    expect(first.out).not.toContain('progress');
     const second = await box.cli('import', 'claude-ai', zip);
     expect(second.code).toBe(0);
     expect(second.out).toContain('already imported export.zip');
@@ -48,5 +49,21 @@ describe('import claude-ai', () => {
     expect((await box.cli('import', 'claude-ai')).code).toBe(2);
     expect((await box.cli('import', 'chatgpt', 'x')).code).toBe(2);
     expect((await box.cli('import')).code).toBe(2);
+  });
+
+  it('prints progress every 100 conversations', async () => {
+    const box = sandbox();
+    const many = Array.from({ length: 120 }, (_, i) => ({
+      uuid: `c-${i}`,
+      name: `Demo conversation ${i}`,
+      created_at: '2026-01-01T00:00:00.000000Z',
+      updated_at: '2026-01-01T00:00:00.000000Z',
+      chat_messages: [],
+    }));
+    const zip = path.join(box.base, 'many.zip');
+    await writeZip(zip, { 'conversations.json': JSON.stringify(many) });
+    const r = await box.cli('import', 'claude-ai', zip);
+    expect(r.out).toContain('progress 100 conversations');
+    expect(r.out).not.toContain('progress 200');
   });
 });

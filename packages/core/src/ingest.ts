@@ -23,6 +23,8 @@ export interface IngestResult {
 export interface IngestOptions {
   waitMs?: number;
   onProgress?: (done: number, total: number, relPath: string) => void;
+  // Import adapters: called each time another 100 records of the current archive file are written.
+  onRecords?: (count: number) => void;
 }
 
 const emptyResult = (): IngestResult => ({
@@ -349,6 +351,7 @@ async function ingestImportFile(
   adapter: SourceAdapter,
   file: ArchiveFile,
   result: IngestResult,
+  options: IngestOptions,
 ): Promise<boolean> {
   const reason = adapter.skipReason?.(file);
   if (reason) {
@@ -384,14 +387,19 @@ async function ingestImportFile(
     if (counts.newRaw > 0 || counts.newEvents > 0 || counts.updatedEvents > 0) changed = true;
   };
   let batch: ParseResult[] = [];
+  let seen = 0;
+  const flush = () => {
+    const before = seen;
+    writeBatch(batch);
+    seen += batch.length;
+    batch = [];
+    for (let mark = (Math.floor(before / 100) + 1) * 100; mark <= seen; mark += 100) options.onRecords?.(mark);
+  };
   for await (const part of (adapter.parseArchive as NonNullable<SourceAdapter['parseArchive']>)(file, ctx)) {
     batch.push(part);
-    if (batch.length >= BATCH) {
-      writeBatch(batch);
-      batch = [];
-    }
+    if (batch.length >= BATCH) flush();
   }
-  if (batch.length > 0) writeBatch(batch);
+  if (batch.length > 0) flush();
   db.prepare(
     `insert into ingest_state (adapter, key, byte_offset, mtime, extra) values (?, ?, ?, ?, 'done')
      on conflict (adapter, key) do update set byte_offset = excluded.byte_offset, mtime = excluded.mtime, extra = 'done'`,
@@ -412,7 +420,7 @@ export async function ingestArchive(
     await new Promise<void>((resolve) => setImmediate(resolve));
     try {
       const changed = adapter.parseArchive
-        ? await ingestImportFile(ctx, db, adapter, file, result)
+        ? await ingestImportFile(ctx, db, adapter, file, result, options)
         : ingestLineFile(ctx, db, adapter, file, result);
       if (changed) result.filesIngested += 1;
     } catch {
