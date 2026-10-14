@@ -26,5 +26,9 @@ export const ingestCommand: Command = async (args, env) => {
     (s) => env.io.stdout.write(s),
     (s) => env.io.stderr.write(s),
   );
+  if (result.failedFiles > 0) {
+    env.io.stderr.write(`error: ${result.failedFiles} archive file(s) failed to ingest\n`);
+    return 1;
+  }
   return 0;
 };

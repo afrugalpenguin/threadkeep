@@ -117,3 +117,20 @@ describe('ingest, search, sessions, show', () => {
     expect((await box.cli('show', '')).code).toBe(1);
   });
 });
+
+describe('failed archive files', () => {
+  it('finishes the run, then exits 1', async () => {
+    const box = sandbox();
+    seed(box, 1);
+    const sha = 'b'.repeat(64);
+    const dir = path.join(box.home, 'archive', 'raw', 'claude-ai');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${sha}.json`), JSON.stringify({ sha256: sha, machine_id: 'm', original_name: 'x.zip', imported_at: 'n' }));
+    fs.writeFileSync(path.join(dir, `${sha}.zip`), 'not a zip');
+    const r = await box.cli('ingest');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('3 new events');
+    expect(r.err).toContain(`raw/claude-ai/${sha}.zip: ingest failed, skipped`);
+    expect((await box.cli('rebuild')).code).toBe(1);
+  });
+});

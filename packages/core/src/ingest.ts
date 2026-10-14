@@ -15,6 +15,8 @@ export interface IngestResult {
   newEvents: number;
   updatedEvents: number;
   newRaw: number;
+  // Archive files that failed to ingest and were skipped; the rest of the run still completes.
+  failedFiles: number;
   warnings: string[];
 }
 
@@ -30,6 +32,7 @@ const emptyResult = (): IngestResult => ({
   newEvents: 0,
   updatedEvents: 0,
   newRaw: 0,
+  failedFiles: 0,
   warnings: [],
 });
 
@@ -407,10 +410,16 @@ export async function ingestArchive(
   for (const { adapter, file } of files) {
     // Let timers (the lock heartbeat) run between files; ingest is otherwise synchronous.
     await new Promise<void>((resolve) => setImmediate(resolve));
-    const changed = adapter.parseArchive
-      ? await ingestImportFile(ctx, db, adapter, file, result)
-      : ingestLineFile(ctx, db, adapter, file, result);
-    if (changed) result.filesIngested += 1;
+    try {
+      const changed = adapter.parseArchive
+        ? await ingestImportFile(ctx, db, adapter, file, result)
+        : ingestLineFile(ctx, db, adapter, file, result);
+      if (changed) result.filesIngested += 1;
+    } catch {
+      // One bad file must not block every other file. No error text: it can quote content.
+      result.warnings.push(`${file.relPath}: ingest failed, skipped`);
+      result.failedFiles += 1;
+    }
     index += 1;
     options.onProgress?.(index, files.length, file.relPath);
   }
@@ -459,6 +468,7 @@ export interface RebuildResult {
   sessions: number;
   events: number;
   raw: number;
+  failedFiles: number;
   warnings: string[];
 }
 
@@ -475,7 +485,7 @@ export async function rebuild(ctx: HansardContext, options: IngestOptions = {}):
       const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
       await ingestArchive(ctx, db, files, result, options);
       const count = (table: string) => (db.prepare(`select count(*) as n from ${table}`).get() as { n: number }).n;
-      return { sessions: count('sessions'), events: count('events'), raw: count('raw_records'), warnings: result.warnings };
+      return { sessions: count('sessions'), events: count('events'), raw: count('raw_records'), failedFiles: result.failedFiles, warnings: result.warnings };
     } finally {
       db.close();
     }

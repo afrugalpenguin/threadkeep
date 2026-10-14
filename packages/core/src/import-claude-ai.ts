@@ -200,6 +200,16 @@ export async function importClaudeAi(
           report.infos.push(`already imported ${name}`);
           continue;
         }
+        // Fully stream-parse before archiving anything: a bad export must never reach the shared archive.
+        try {
+          const probe = { machineId: ctx.machineId, relPath: name, absPath: candidate.file };
+          for await (const part of claudeAiAdapter.parseArchive?.(probe, ctx) ?? []) void part;
+        } catch {
+          report.warnings.push(`${name}: not a valid conversations export, not imported`);
+          report.failed += 1;
+          report.conversationsParts -= 1;
+          continue;
+        }
         const target = path.join(archiveDir(ctx), `${sha}.zip`);
         const sidecar = path.join(archiveDir(ctx), `${sha}.json`);
         const importedAt = new Date().toISOString();
@@ -223,6 +233,7 @@ export async function importClaudeAi(
           newEvents: 0,
           updatedEvents: 0,
           newRaw: 0,
+          failedFiles: 0,
           warnings: [],
         };
         await ingestArchive(ctx, db, [{ adapter: claudeAiAdapter, file }], result, {});

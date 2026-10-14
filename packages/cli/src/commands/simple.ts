@@ -28,6 +28,10 @@ export const rebuildCommand: Command = async (args, env) => {
   });
   env.io.stdout.write(`rebuilt ${result.sessions} sessions, ${result.events} events, ${result.raw} records\n`);
   for (const warning of result.warnings) env.io.stderr.write(`warning: ${warning}\n`);
+  if (result.failedFiles > 0) {
+    env.io.stderr.write(`error: ${result.failedFiles} archive file(s) failed to ingest\n`);
+    return 1;
+  }
   return 0;
 };
 
