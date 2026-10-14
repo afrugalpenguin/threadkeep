@@ -24,7 +24,7 @@ commands:
   machine             show | set-label <label>
   doctor              check the setup
   watch               ingest on change
-  import claude-ai    not implemented yet
+  import claude-ai <path...>  import claude.ai export zips, a directory or a manifest
 
 every command accepts --home <dir> (default: HANSARD_HOME, else ~/.hansard)
 exit codes: 0 ok, 1 error or not found, 2 usage, 3 busy

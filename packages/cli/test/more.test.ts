@@ -117,14 +117,7 @@ describe('doctor', () => {
   });
 });
 
-describe('import and watch', () => {
-  it('keeps import claude-ai unimplemented in this round', async () => {
-    const box = sandbox();
-    const r = await box.cli('import', 'claude-ai', 'x.zip');
-    expect(r.code).toBe(2);
-    expect(r.err).toContain('not implemented yet');
-  });
-
+describe('watch', () => {
   it('ingests a session file when it changes and stops on abort', async () => {
     const box = sandbox();
     let out = '';

@@ -1,6 +1,8 @@
+import path from 'node:path';
 import {
   changeExclusion,
   displayPath,
+  importClaudeAi,
   listSources,
   machineSummary,
   openDb,
@@ -8,7 +10,7 @@ import {
   rebuild,
   setMachineLabel,
 } from '@hansard/core';
-import { parse, str } from '../args.js';
+import { intFlag, parse, str } from '../args.js';
 import { jsonOut, shortId } from '../format.js';
 import { usage, type Command } from '../types.js';
 
@@ -105,10 +107,28 @@ export const machineCommand: Command = async (args, env) => {
 };
 
 export const importCommand: Command = async (args, env) => {
-  const [what] = args;
-  if (what === 'claude-ai') {
-    env.io.stderr.write('error: import claude-ai is not implemented yet\n');
-    return 2;
-  }
-  throw usage('import needs a source: claude-ai');
+  const [what, ...rest] = args;
+  if (what !== 'claude-ai') throw usage('import needs a source: claude-ai');
+  const { values, positionals } = parse(rest, { wait: { type: 'string' } });
+  if (positionals.length === 0) throw usage('import claude-ai needs at least one zip, directory or manifest path');
+  const ctx = env.context(str(values['home']));
+  const report = await importClaudeAi(
+    ctx,
+    positionals.map((p) => path.resolve(p)),
+    { waitMs: intFlag(values['wait'], 'wait', 30_000) },
+  );
+  const out = (s: string) => env.io.stdout.write(s);
+  for (const info of report.infos) out(`${info}
+`);
+  for (const warning of report.warnings) env.io.stderr.write(`warning: ${warning}
+`);
+  out(
+    `imported ${report.imported} exports, ${report.newConversations} new conversations, ` +
+      `${report.newEvents} new events, ${report.updatedEvents} updated events, ${report.alreadyImported} already imported
+`,
+  );
+  const failures = report.failed + report.missingConversationsParts;
+  if (failures > 0) env.io.stderr.write(`error: ${failures} input(s) failed or were missing
+`);
+  return failures > 0 ? 1 : 0;
 };

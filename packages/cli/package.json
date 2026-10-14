@@ -11,7 +11,11 @@
   "bin": {
     "hansard": "dist/index.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -b .",
     "typecheck": "tsc -b ."
@@ -19,5 +23,9 @@
   "dependencies": {
     "@hansard/core": "workspace:*",
     "chokidar": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/yazl": "^3.3.1",
+    "yazl": "^3.3.1"
   }
 }
