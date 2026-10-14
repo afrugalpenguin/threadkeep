@@ -99,7 +99,7 @@ describe('doctor', () => {
     await box.cli('ingest');
     const r = await box.cli('doctor');
     expect(r.code).toBe(0);
-    expect(r.out).toMatch(/^ok {4}database: <home>\/history\.db schema version 1$/m);
+    expect(r.out).toMatch(/^ok {4}database: <home>\/history\.db schema version 2$/m);
     expect(r.out).toMatch(/^ok {4}archive: <archive> reachable and writable$/m);
     expect(r.out).toMatch(/^warn {2}hansard on PATH: not found$/m);
     expect(r.out).toMatch(/^warn {2}mcp server: not built yet$/m);

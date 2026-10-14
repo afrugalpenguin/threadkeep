@@ -13,6 +13,7 @@ export interface IngestResult {
   mirroredBytes: number;
   filesIngested: number;
   newEvents: number;
+  updatedEvents: number;
   newRaw: number;
   warnings: string[];
 }
@@ -27,6 +28,7 @@ const emptyResult = (): IngestResult => ({
   mirroredBytes: 0,
   filesIngested: 0,
   newEvents: 0,
+  updatedEvents: 0,
   newRaw: 0,
   warnings: [],
 });
@@ -44,8 +46,9 @@ function mergePaths(a: string | null, b: string[] | undefined): string | null {
   return merged.size === 0 ? null : JSON.stringify([...merged].sort());
 }
 
-interface Counts {
+export interface Counts {
   newEvents: number;
+  updatedEvents: number;
   newRaw: number;
 }
 
@@ -57,7 +60,7 @@ export function writeParsed(
   parsed: ParseResult,
   touchedSessions: Set<string>,
 ): Counts {
-  const counts: Counts = { newEvents: 0, newRaw: 0 };
+  const counts: Counts = { newEvents: 0, updatedEvents: 0, newRaw: 0 };
   const source = adapter.id;
   const insertRaw = db.prepare(
     'insert into raw_records (source, machine_id, location, byte_offset, session_id, raw, unparsed) values (?, ?, ?, ?, ?, ?, ?) on conflict do nothing',
@@ -136,8 +139,52 @@ export function writeParsed(
     }
   };
 
+  const getVersion = db.prepare('select source_updated_at as v from events where id = ?');
+  const upsertVersioned = db.prepare(
+    `insert into events (id, raw_id, source, machine_id, session_id, project_dir, timestamp, role, kind, content, content_redacted,
+       tool_name, tool_input, tool_input_redacted, tool_output, tool_output_redacted, files_touched, attachments, source_updated_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     on conflict (id) do update set
+       raw_id = case when excluded.source_updated_at > coalesce(events.source_updated_at, '') then excluded.raw_id else events.raw_id end,
+       timestamp = excluded.timestamp, role = excluded.role, kind = excluded.kind,
+       content = excluded.content, content_redacted = excluded.content_redacted,
+       tool_name = excluded.tool_name, tool_input = excluded.tool_input, tool_input_redacted = excluded.tool_input_redacted,
+       tool_output = excluded.tool_output, tool_output_redacted = excluded.tool_output_redacted,
+       files_touched = excluded.files_touched, attachments = excluded.attachments,
+       source_updated_at = excluded.source_updated_at
+     where excluded.source_updated_at >= coalesce(events.source_updated_at, '')`,
+  );
+
   for (const event of parsed.events) {
     ensure(event.sessionId);
+    if (event.sourceUpdatedAt !== undefined) {
+      // Edited re-exports update in place; an older copy never overwrites a newer one and nothing is deleted.
+      const stored = getVersion.get(event.id) as { v: string | null } | undefined;
+      upsertVersioned.run(
+        event.id,
+        rawIds[event.recordIndex],
+        source,
+        file.machineId,
+        event.sessionId,
+        event.projectDir,
+        event.timestamp,
+        event.role,
+        event.kind,
+        event.content,
+        redactText(event.content),
+        event.toolName ?? null,
+        event.toolInput ?? null,
+        redactText(event.toolInput ?? null),
+        event.toolOutput ?? null,
+        redactText(event.toolOutput ?? null),
+        event.filesTouched && event.filesTouched.length > 0 ? json(event.filesTouched) : null,
+        event.attachments && event.attachments.length > 0 ? json(event.attachments) : null,
+        event.sourceUpdatedAt,
+      );
+      if (stored === undefined) counts.newEvents += 1;
+      else if (event.sourceUpdatedAt > (stored.v ?? '')) counts.updatedEvents += 1;
+      continue;
+    }
     if (event.kind === 'tool') {
       upsertTool(event.id, {
         recordIndex: event.recordIndex,
@@ -180,10 +227,16 @@ export function writeParsed(
 
   const setCwd = db.prepare('update sessions set project_dir = coalesce(project_dir, ?) where id = ?');
   const setTitle = db.prepare('update sessions set title = ? where id = ?');
+  const setSourceTitle = db.prepare(
+    `update sessions set title = ?, source_updated_at = ? where id = ? and ? >= coalesce(source_updated_at, '')`,
+  );
   for (const update of parsed.sessions) {
     ensure(update.sessionId);
     if (update.cwd) setCwd.run(update.cwd, update.sessionId);
     if (update.aiTitle) setTitle.run(redactText(update.aiTitle), update.sessionId);
+    if (update.title) {
+      setSourceTitle.run(redactText(update.title.value), update.title.updatedAt, update.sessionId, update.title.updatedAt);
+    }
   }
   return counts;
 }
@@ -263,26 +316,104 @@ function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, fil
   })();
   result.warnings.push(...parsed.warnings);
   result.newEvents += counts.newEvents;
+  result.updatedEvents += counts.updatedEvents;
   result.newRaw += counts.newRaw;
   return counts.newRaw > 0 || counts.newEvents > 0;
 }
 
-function ingestArchive(
+const BATCH = 25;
+
+function mergeParsed(parts: ParseResult[]): ParseResult {
+  const out: ParseResult = { records: [], events: [], patches: [], sessions: [], warnings: [] };
+  for (const part of parts) {
+    const base = out.records.length;
+    out.records.push(...part.records);
+    out.events.push(...part.events.map((e) => ({ ...e, recordIndex: e.recordIndex + base })));
+    out.patches.push(...part.patches.map((p) => ({ ...p, recordIndex: p.recordIndex + base })));
+    out.sessions.push(...part.sessions);
+    out.warnings.push(...part.warnings);
+  }
+  return out;
+}
+
+// Import adapters stream an immutable archive file; it is marked done once fully ingested.
+async function ingestImportFile(
+  ctx: HansardContext,
+  db: Db,
+  adapter: SourceAdapter,
+  file: ArchiveFile,
+  result: IngestResult,
+): Promise<boolean> {
+  const reason = adapter.skipReason?.(file);
+  if (reason) {
+    result.warnings.push(`${file.relPath}: ${reason}`);
+    return false;
+  }
+  let size: number;
+  try {
+    size = fs.statSync(file.absPath).size;
+  } catch {
+    result.warnings.push(`${file.relPath}: archive file unreadable, skipped`);
+    return false;
+  }
+  const state = db
+    .prepare('select byte_offset, extra from ingest_state where adapter = ? and key = ?')
+    .get(adapter.id, file.relPath) as { byte_offset: number; extra: string | null } | undefined;
+  if (state?.extra === 'done' && state.byte_offset === size) return false;
+
+  let changed = false;
+  const writeBatch = (batch: ParseResult[]) => {
+    const merged = mergeParsed(batch);
+    const touched = new Set<string>();
+    const counts = db.transaction(() => {
+      const written = writeParsed(db, adapter, file, merged, touched);
+      refreshSessions(db, touched);
+      applyExclusions(db, readExclusions(ctx), touched);
+      return written;
+    })();
+    result.warnings.push(...merged.warnings);
+    result.newEvents += counts.newEvents;
+    result.updatedEvents += counts.updatedEvents;
+    result.newRaw += counts.newRaw;
+    if (counts.newRaw > 0 || counts.newEvents > 0 || counts.updatedEvents > 0) changed = true;
+  };
+  let batch: ParseResult[] = [];
+  for await (const part of (adapter.parseArchive as NonNullable<SourceAdapter['parseArchive']>)(file, ctx)) {
+    batch.push(part);
+    if (batch.length >= BATCH) {
+      writeBatch(batch);
+      batch = [];
+    }
+  }
+  if (batch.length > 0) writeBatch(batch);
+  db.prepare(
+    `insert into ingest_state (adapter, key, byte_offset, mtime, extra) values (?, ?, ?, ?, 'done')
+     on conflict (adapter, key) do update set byte_offset = excluded.byte_offset, mtime = excluded.mtime, extra = 'done'`,
+  ).run(adapter.id, file.relPath, size, new Date().toISOString());
+  return changed;
+}
+
+export async function ingestArchive(
   ctx: HansardContext,
   db: Db,
   files: { adapter: SourceAdapter; file: ArchiveFile }[],
   result: IngestResult,
   options: IngestOptions,
-): void {
-  files.forEach(({ adapter, file }, index) => {
-    if (ingestLineFile(ctx, db, adapter, file, result)) result.filesIngested += 1;
-    options.onProgress?.(index + 1, files.length, file.relPath);
-  });
+): Promise<void> {
+  let index = 0;
+  for (const { adapter, file } of files) {
+    const changed = adapter.parseArchive
+      ? await ingestImportFile(ctx, db, adapter, file, result)
+      : ingestLineFile(ctx, db, adapter, file, result);
+    if (changed) result.filesIngested += 1;
+    index += 1;
+    options.onProgress?.(index, files.length, file.relPath);
+  }
 }
 
 export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}): Promise<IngestResult> {
   const result = emptyResult();
-  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, () => {
+  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
     fs.mkdirSync(ctx.archiveRoot, { recursive: true });
     writeMachineArchiveFile(ctx);
     for (const adapter of adapters) {
@@ -291,7 +422,7 @@ export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}
     const db = openDb(ctx.dbPath);
     try {
       const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
-      ingestArchive(ctx, db, files, result, options);
+      await ingestArchive(ctx, db, files, result, options);
     } finally {
       db.close();
     }
@@ -305,13 +436,13 @@ export async function ingestFile(ctx: HansardContext, localPath: string, options
   if (!owner || !owner.archiveFileFor || !owner.mirror) throw new Error('path is not under any configured source root');
   const file = owner.archiveFileFor(ctx, localPath) as ArchiveFile;
   const result = emptyResult();
-  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, () => {
+  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
     fs.mkdirSync(ctx.archiveRoot, { recursive: true });
     writeMachineArchiveFile(ctx);
     addMirror(result, (owner.mirror as NonNullable<SourceAdapter['mirror']>)(ctx, { file: localPath }));
     const db = openDb(ctx.dbPath);
     try {
-      if (fs.existsSync(file.absPath)) ingestArchive(ctx, db, [{ adapter: owner, file }], result, options);
+      if (fs.existsSync(file.absPath)) await ingestArchive(ctx, db, [{ adapter: owner, file }], result, options);
     } finally {
       db.close();
     }
@@ -330,14 +461,14 @@ export interface RebuildResult {
 // Decisions, links and imports are local state and are kept.
 export async function rebuild(ctx: HansardContext, options: IngestOptions = {}): Promise<RebuildResult> {
   const result = emptyResult();
-  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, () => {
+  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
     const db = openDb(ctx.dbPath);
     try {
       db.transaction(() => {
         db.exec('delete from events; delete from raw_records; delete from sessions; delete from ingest_state');
       })();
       const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
-      ingestArchive(ctx, db, files, result, options);
+      await ingestArchive(ctx, db, files, result, options);
       const count = (table: string) => (db.prepare(`select count(*) as n from ${table}`).get() as { n: number }).n;
       return { sessions: count('sessions'), events: count('events'), raw: count('raw_records'), warnings: result.warnings };
     } finally {

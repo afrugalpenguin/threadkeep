@@ -16,15 +16,25 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -b .",
     "typecheck": "tsc -b ."
   },
   "dependencies": {
-    "better-sqlite3": "^12.2.0"
+    "better-sqlite3": "^12.2.0",
+    "stream-json": "^1.9.1",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/stream-json": "^1.7.8",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
+    "yazl": "^3.3.1"
   }
 }

@@ -32,6 +32,9 @@ export interface EventOut {
   content: string;
   toolName?: string;
   toolInput?: string;
+  toolOutput?: string;
+  // Set by adapters whose source can re-export edited data: the newest edit wins on conflict.
+  sourceUpdatedAt?: string;
   filesTouched?: string[];
   attachments?: unknown[];
 }
@@ -52,6 +55,8 @@ export interface SessionUpdate {
   sessionId: string;
   cwd?: string;
   aiTitle?: string;
+  // Authoritative title with the source's own edit time, newest wins.
+  title?: { value: string; updatedAt: string };
 }
 
 export interface ParseResult {
@@ -79,6 +84,8 @@ export interface SourceAdapter {
   archiveFiles(ctx: HansardContext): ArchiveFile[];
   // Reason to skip an archive file (for example a sync-conflict copy), or null to ingest it.
   skipReason?(file: ArchiveFile): string | null;
+  // Import adapters read an immutable archive file (for example a zip) instead of line chunks.
+  parseArchive?(file: ArchiveFile, ctx: HansardContext): AsyncIterable<ParseResult>;
   parse(file: ArchiveFile, chunk: { text: string; startOffset: number }, ctx: HansardContext): ParseResult;
   fixtures: FixtureGenerator;
 }

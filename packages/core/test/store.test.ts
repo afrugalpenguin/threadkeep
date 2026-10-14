@@ -45,13 +45,13 @@ describe('store', () => {
   it('opens with wal, foreign keys and the current schema, idempotently', () => {
     const { ctx } = makeMachine();
     const db = openDb(ctx.dbPath);
-    expect(schemaVersion(db)).toBe(1);
+    expect(schemaVersion(db)).toBe(2);
     expect(db.pragma('journal_mode', { simple: true })).toBe('wal');
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
     db.close();
     const again = openDb(ctx.dbPath);
-    expect(schemaVersion(again)).toBe(1);
-    expect(again.prepare('select count(*) as n from schema_version').get()).toEqual({ n: 1 });
+    expect(schemaVersion(again)).toBe(2);
+    expect(again.prepare('select count(*) as n from schema_version').get()).toEqual({ n: 2 });
     again.close();
   });
 

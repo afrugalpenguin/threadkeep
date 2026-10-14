@@ -20,7 +20,7 @@ export function summariseToolInput(input: unknown): string {
   return (JSON.stringify(input ?? {}) ?? '').slice(0, SUMMARY_MAX);
 }
 
-function pathsFrom(value: unknown): string[] {
+export function pathsFrom(value: unknown): string[] {
   if (!isObject(value)) return [];
   return ['file_path', 'path', 'notebook_path', 'filePath']
     .map((key) => str(value[key]))
