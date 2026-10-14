@@ -1,0 +1,30 @@
+{
+  "name": "@hansard/core",
+  "version": "0.1.0",
+  "description": "Hansard core: local archive, ingest, redaction and search for AI conversation history",
+  "type": "module",
+  "license": "MIT",
+  "author": "afrugalpenguin",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -b .",
+    "typecheck": "tsc -b ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
+  }
+}

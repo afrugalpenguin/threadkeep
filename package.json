@@ -12,7 +12,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc -b packages/core packages/cli && tsc --noEmit -p tsconfig.json",
     "hygiene": "node scripts/check-hygiene.mjs --tracked",
     "hygiene:history": "node scripts/check-hygiene.mjs --history"
   },
