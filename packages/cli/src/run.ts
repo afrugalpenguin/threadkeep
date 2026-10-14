@@ -5,6 +5,8 @@ import {
   NotFoundError,
   UsageError,
   loadContext,
+  safeMessage,
+  type PathRoots,
 } from '@hansard/core';
 import { commands } from './commands.js';
 import { ExitError, type CommandEnv, type Io } from './types.js';
@@ -51,14 +53,20 @@ export async function run(
     io.stderr.write(`error: unknown command: ${name}\n${HELP}`);
     return 2;
   }
+  // Roots we can see so far, used to keep absolute paths out of error output even if loading the context failed.
+  let known: PathRoots = { userHome: userHomeFrom(env), home: env['HANSARD_HOME'] };
   const commandEnv: CommandEnv = {
     io,
     env,
     ...(signal ? { signal } : {}),
     context(home) {
       const options: Parameters<typeof loadContext>[0] = { env, userHome: userHomeFrom(env) };
-      if (home) options.home = home;
+      if (home) {
+        options.home = home;
+        known = { ...known, home };
+      }
       const ctx = loadContext(options);
+      known = ctx;
       if (ctx.created.includes('<home>/config.json')) io.stderr.write('created config at <home>/config.json\n');
       return ctx;
     },
@@ -87,7 +95,7 @@ export async function run(
       io.stderr.write(`error: ${error.message}\n`);
       return 2;
     }
-    io.stderr.write(`error: ${error instanceof Error ? error.message : 'unknown failure'}\n`);
+    io.stderr.write(`error: ${safeMessage(known, error)}\n`);
     return 1;
   }
 }

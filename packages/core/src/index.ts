@@ -1,4 +1,5 @@
 export * from './paths.js';
+export * from './safe-message.js';
 export * from './config.js';
 export * from './lock.js';
 export * from './store/db.js';

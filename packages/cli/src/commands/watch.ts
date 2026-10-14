@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { adapters, displayPath, ingestFile, type HansardContext } from '@hansard/core';
+import { adapters, displayPath, ingestFile, safeMessage, type HansardContext } from '@hansard/core';
 import { intFlag, parse, str } from '../args.js';
 import { usage, type Command } from '../types.js';
 
@@ -31,12 +31,12 @@ export const watchCommand: Command = async (args, env) => {
         env.io.stdout.write(`ingested ${displayPath(ctx, file)}: ${r.newEvents} new events, ${r.mirroredBytes} bytes mirrored\n`);
         for (const w of r.warnings) env.io.stderr.write(`warning: ${w}\n`);
       } catch (error) {
-        env.io.stderr.write(`error: ${displayPath(ctx, file)}: ${error instanceof Error ? error.message : 'failed'}\n`);
+        env.io.stderr.write(`error: ${displayPath(ctx, file)}: ${safeMessage(ctx, error)}\n`);
       }
     });
   };
   watcher.on('add', queue).on('change', queue);
-  watcher.on('error', (error) => env.io.stderr.write(`error: watcher: ${error instanceof Error ? error.message : 'failed'}\n`));
+  watcher.on('error', (error) => env.io.stderr.write(`error: watcher: ${safeMessage(ctx, error)}\n`));
 
   await new Promise<void>((resolve) => {
     watcher.on('ready', () => {

@@ -19,7 +19,7 @@ export function archivePathFor(ctx: HansardContext, adapterId: string, s: LocalS
 }
 
 // Only top-level <project>/<uuid>.jsonl files are sessions; subagents, tool-results and memory are ignored.
-export function listLocalSessions(root: string): LocalSession[] {
+export function listLocalSessions(root: string, onSkip?: (projectFolder: string) => void): LocalSession[] {
   const out: LocalSession[] = [];
   let projects: fs.Dirent[];
   try {
@@ -30,7 +30,14 @@ export function listLocalSessions(root: string): LocalSession[] {
   for (const project of projects) {
     if (!project.isDirectory()) continue;
     const dir = path.join(root, project.name);
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      onSkip?.(project.name);
+      continue;
+    }
+    for (const entry of entries) {
       if (entry.isFile() && SESSION_FILE.test(entry.name)) {
         out.push({ projectFolder: project.name, fileName: entry.name, localPath: path.join(dir, entry.name) });
       }

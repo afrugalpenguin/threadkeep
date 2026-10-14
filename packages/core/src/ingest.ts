@@ -435,7 +435,7 @@ export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}
     }
     const db = openDb(ctx.dbPath);
     try {
-      const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
+      const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx, (w) => result.warnings.push(w)).map((file) => ({ adapter, file })));
       await ingestArchive(ctx, db, files, result, options);
     } finally {
       db.close();
@@ -482,7 +482,7 @@ export async function rebuild(ctx: HansardContext, options: IngestOptions = {}):
       db.transaction(() => {
         db.exec('delete from events; delete from raw_records; delete from sessions; delete from ingest_state');
       })();
-      const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
+      const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx, (w) => result.warnings.push(w)).map((file) => ({ adapter, file })));
       await ingestArchive(ctx, db, files, result, options);
       const count = (table: string) => (db.prepare(`select count(*) as n from ${table}`).get() as { n: number }).n;
       return { sessions: count('sessions'), events: count('events'), raw: count('raw_records'), failedFiles: result.failedFiles, warnings: result.warnings };

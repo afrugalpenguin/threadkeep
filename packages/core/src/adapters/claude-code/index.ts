@@ -13,25 +13,34 @@ function root(ctx: HansardContext): string | null {
   return ctx.sources[ID]?.root ?? null;
 }
 
-function subdirs(dir: string): string[] {
+function subdirs(dir: string, onFail?: () => void): string[] {
   try {
     return fs
       .readdirSync(dir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
       .sort();
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') onFail?.();
     return [];
   }
 }
 
-function archiveFiles(ctx: HansardContext): ArchiveFile[] {
+function archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[] {
   const base = path.join(ctx.archiveRoot, 'raw', ID);
   const out: ArchiveFile[] = [];
-  for (const machineId of subdirs(base)) {
-    for (const project of subdirs(path.join(base, machineId))) {
+  const warn = (rel: string) => () => onWarning?.(`${rel}: unreadable directory, skipped`);
+  for (const machineId of subdirs(base, warn(`raw/${ID}`))) {
+    for (const project of subdirs(path.join(base, machineId), warn(`raw/${ID}/${machineId}`))) {
       const dir = path.join(base, machineId, project);
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      let entries: fs.Dirent[];
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        warn(`raw/${ID}/${machineId}/${project}`)();
+        continue;
+      }
+      for (const entry of entries) {
         if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.jsonl')) continue;
         const absPath = path.join(dir, entry.name);
         out.push({ machineId, relPath: toPosix(path.relative(ctx.archiveRoot, absPath)), absPath });
@@ -80,7 +89,8 @@ export const claudeCodeAdapter: SourceAdapter = {
       mirrorOne(ctx, ID, { projectFolder: parts[0], fileName: parts[1], localPath: opts.file }, report);
       return report;
     }
-    for (const session of listLocalSessions(r)) mirrorOne(ctx, ID, session, report);
+    const onSkip = (folder: string) => report.skipped.push({ relPath: folder, reason: 'unreadable directory, skipped' });
+    for (const session of listLocalSessions(r, onSkip)) mirrorOne(ctx, ID, session, report);
     return report;
   },
   archiveFileFor,

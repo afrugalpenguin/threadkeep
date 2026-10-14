@@ -53,12 +53,19 @@ export const DEFAULT_CONFIG: HansardConfig = {
 };
 
 // Display form of a path that never reveals an absolute home directory.
-export function displayPath(ctx: HansardContext, abs: string): string {
-  const rel = relativeWithin(ctx.archiveRoot, abs);
+export interface PathRoots {
+  home?: string | undefined;
+  userHome?: string | undefined;
+  archiveRoot?: string | undefined;
+}
+
+export function displayPath(ctx: PathRoots, abs: string): string {
+  const within = (root: string | undefined) => (root ? relativeWithin(root, abs) : null);
+  const rel = within(ctx.archiveRoot);
   if (rel !== null) return rel === '' ? '<archive>' : `<archive>/${rel}`;
-  const inHome = relativeWithin(ctx.home, abs);
+  const inHome = within(ctx.home);
   if (inHome !== null) return inHome === '' ? '<home>' : `<home>/${inHome}`;
-  const inUser = relativeWithin(ctx.userHome, abs);
+  const inUser = within(ctx.userHome);
   if (inUser !== null) return inUser === '' ? '~' : `~/${inUser}`;
   return `<external>/${toPosix(abs).split('/').filter(Boolean).pop() ?? ''}`;
 }

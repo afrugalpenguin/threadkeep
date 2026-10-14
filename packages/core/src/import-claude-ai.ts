@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeMachineArchiveFile, type HansardContext } from './config.js';
@@ -115,7 +115,8 @@ function sha256Of(file: string): string {
 
 // Write to a temp name in the same dir, fsync, rename. A half copied zip never has its final name.
 function publish(target: string, write: (fd: number) => void): void {
-  const temp = `${target}.tmp-${process.pid}`;
+  // Unique per attempt so a temp file left behind by a crash can never cause EEXIST.
+  const temp = `${target}.tmp-${process.pid}-${randomUUID()}`;
   const fd = fs.openSync(temp, 'wx');
   try {
     write(fd);

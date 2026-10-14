@@ -134,3 +134,17 @@ describe('failed archive files', () => {
     expect((await box.cli('rebuild')).code).toBe(1);
   });
 });
+
+describe('error output', () => {
+  it('never prints absolute paths, even for raw filesystem errors', async () => {
+    const box = sandbox();
+    seed(box, 1);
+    await box.cli('sessions');
+    fs.writeFileSync(path.join(box.home, 'archive'), 'a file, not a directory');
+    const r = await box.cli('ingest');
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('error: EEXIST mkdir <archive>');
+    expect(r.err).not.toContain(box.base);
+    expect((await box.cli('rebuild')).err).not.toContain(box.base);
+  });
+});

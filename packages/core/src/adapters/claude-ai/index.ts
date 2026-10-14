@@ -30,12 +30,13 @@ export function readSidecar(zipPath: string): Sidecar | null {
   }
 }
 
-function archiveFiles(ctx: HansardContext): ArchiveFile[] {
+function archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[] {
   const dir = archiveDir(ctx);
   let names: string[];
   try {
     names = fs.readdirSync(dir).filter((n) => /^[0-9a-f]{64}\.zip$/.test(n));
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') onWarning?.(`raw/${ID}: unreadable directory, skipped`);
     return [];
   }
   return names.sort().map((name) => {

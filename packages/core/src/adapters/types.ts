@@ -81,7 +81,7 @@ export interface SourceAdapter {
   mirror?(ctx: HansardContext, opts?: { file?: string }): MirrorReport;
   // Archive file that a local source file mirrors to, or null when the adapter does not own that path.
   archiveFileFor?(ctx: HansardContext, localPath: string): ArchiveFile | null;
-  archiveFiles(ctx: HansardContext): ArchiveFile[];
+  archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[];
   // Reason to skip an archive file (for example a sync-conflict copy), or null to ingest it.
   skipReason?(file: ArchiveFile): string | null;
   // Import adapters read an immutable archive file (for example a zip) instead of line chunks.
