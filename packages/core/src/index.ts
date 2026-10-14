@@ -9,3 +9,5 @@ export * from './ingest.js';
 export * from './redaction/index.js';
 export { claudeCodeAdapter } from './adapters/claude-code/index.js';
 export * as claudeCodeFixtures from './adapters/claude-code/fixtures.js';
+export * from './exclusions.js';
+export * from './query.js';

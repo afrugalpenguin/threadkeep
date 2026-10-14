@@ -1,5 +1,12 @@
-// Fail closed until the pattern set lands: nothing is stored unredacted.
-export function redactText(text: string | null): string | null {
+import { patterns as defaultPatterns, type RedactionPattern } from './patterns.js';
+
+export { patterns, type RedactionPattern } from './patterns.js';
+
+export function redactText(text: string | null, patterns: RedactionPattern[] = defaultPatterns): string | null {
   if (text === null || text === '') return text;
-  return '[REDACTED:pending]';
+  let out = text;
+  for (const { name, pattern, replacement } of patterns) {
+    out = out.replace(pattern, () => replacement ?? `[REDACTED:${name}]`);
+  }
+  return out;
 }

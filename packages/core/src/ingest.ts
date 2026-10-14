@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { writeMachineArchiveFile, type HansardContext } from './config.js';
+import { readExclusions, writeMachineArchiveFile, type HansardContext } from './config.js';
+import { applyExclusions } from './exclusions.js';
 import { TOOL_OUTPUT_SEPARATOR, splitToolContent, titleFromText } from './ids.js';
 import { withLock } from './lock.js';
 import { redactText } from './redaction/index.js';
@@ -254,6 +255,7 @@ function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, fil
   const counts = db.transaction(() => {
     const written = writeParsed(db, adapter, file, parsed, touched);
     refreshSessions(db, touched);
+    applyExclusions(db, readExclusions(ctx), touched);
     db.prepare(
       'insert into ingest_state (adapter, key, byte_offset, mtime, extra) values (?, ?, ?, ?, null) on conflict (adapter, key) do update set byte_offset = excluded.byte_offset, mtime = excluded.mtime',
     ).run(adapter.id, file.relPath, offset + lastNewline + 1, new Date().toISOString());
@@ -314,5 +316,32 @@ export async function ingestFile(ctx: HansardContext, localPath: string, options
       db.close();
     }
     return result;
+  });
+}
+
+export interface RebuildResult {
+  sessions: number;
+  events: number;
+  raw: number;
+  warnings: string[];
+}
+
+// Drops everything derived from the archive and re-ingests it with the current parsers and redaction patterns.
+// Decisions, links and imports are local state and are kept.
+export async function rebuild(ctx: HansardContext, options: IngestOptions = {}): Promise<RebuildResult> {
+  const result = emptyResult();
+  return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, () => {
+    const db = openDb(ctx.dbPath);
+    try {
+      db.transaction(() => {
+        db.exec('delete from events; delete from raw_records; delete from sessions; delete from ingest_state');
+      })();
+      const files = adapters.flatMap((adapter) => adapter.archiveFiles(ctx).map((file) => ({ adapter, file })));
+      ingestArchive(ctx, db, files, result, options);
+      const count = (table: string) => (db.prepare(`select count(*) as n from ${table}`).get() as { n: number }).n;
+      return { sessions: count('sessions'), events: count('events'), raw: count('raw_records'), warnings: result.warnings };
+    } finally {
+      db.close();
+    }
   });
 }
