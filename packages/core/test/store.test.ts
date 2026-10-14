@@ -99,7 +99,10 @@ describe('lock', () => {
 
   it('takes over a lock older than ten minutes', async () => {
     const { ctx } = makeMachine();
-    fs.writeFileSync(ctx.lockPath, `${process.pid} ${Date.now() - 11 * 60 * 1000}\n`);
+    fs.writeFileSync(ctx.lockPath, `${process.pid} ${Date.now()} some-token
+`);
+    const old = new Date(Date.now() - 11 * 60 * 1000);
+    fs.utimesSync(ctx.lockPath, old, old);
     expect(await withLock(ctx, { waitMs: 1000 }, () => 'ok')).toBe('ok');
   });
 });

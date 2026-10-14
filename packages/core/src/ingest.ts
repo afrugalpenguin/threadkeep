@@ -405,6 +405,8 @@ export async function ingestArchive(
 ): Promise<void> {
   let index = 0;
   for (const { adapter, file } of files) {
+    // Let timers (the lock heartbeat) run between files; ingest is otherwise synchronous.
+    await new Promise<void>((resolve) => setImmediate(resolve));
     const changed = adapter.parseArchive
       ? await ingestImportFile(ctx, db, adapter, file, result)
       : ingestLineFile(ctx, db, adapter, file, result);
