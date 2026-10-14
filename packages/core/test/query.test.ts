@@ -146,6 +146,23 @@ describe('exclusions', () => {
     expect(matchesGlob('/aXb', '/a.b')).toBe(false);
   });
 
+  it('treats a trailing /** as the directory and everything below it', () => {
+    expect(matchesGlob('/x/secret', '/x/secret/**')).toBe(true);
+    expect(matchesGlob('/x/secret/', '/x/secret/**')).toBe(true);
+    expect(matchesGlob('/x/secret/a/b', '/x/secret/**')).toBe(true);
+    expect(matchesGlob('/x/secretive', '/x/secret/**')).toBe(false);
+    expect(matchesGlob('/x', '/x/secret/**')).toBe(false);
+    expect(matchesGlob('C:\\x\\secret', 'C:\\x\\secret\\**')).toBe(true);
+    expect(matchesGlob('C:\\x\\Secret\\deep\\er', 'c:/x/secret/**')).toBe(true);
+    expect(matchesGlob('/x/secret/a', '/x/secret/*')).toBe(true);
+    expect(matchesGlob('/x/secret', '/x/secret/*')).toBe(false);
+  });
+
+  it('keeps a leading **/ pattern exact', () => {
+    expect(matchesGlob('/a/projects/secret', '**/projects/secret')).toBe(true);
+    expect(matchesGlob('/a/projects/secret/sub', '**/projects/secret')).toBe(false);
+  });
+
   it('hides excluded sessions everywhere and add/remove recompute flags', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {

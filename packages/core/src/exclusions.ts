@@ -4,9 +4,13 @@ import type { Db } from './store/db.js';
 
 const SPECIAL = /[.+^${}()|[\]\\]/g;
 
-// Case-insensitive; `**` matches any characters, `*` anything but '/', `?` one character.
+// Case-insensitive, slash style agnostic. `**` matches any characters, `*` anything but '/', `?` one character.
+// A trailing `/**` also matches the directory itself, so `/x/secret/**` covers `/x/secret` and everything below.
+// Anything else is exact: `**/projects/secret` matches that directory only, not its children.
 export function globToRegExp(glob: string): RegExp {
-  const g = toPosix(glob);
+  let g = toPosix(glob);
+  const subtree = g.endsWith('/**');
+  if (subtree) g = g.slice(0, -3);
   let out = '';
   for (let i = 0; i < g.length; i += 1) {
     const c = g[i] as string;
@@ -17,7 +21,7 @@ export function globToRegExp(glob: string): RegExp {
     else if (c === '?') out += '.';
     else out += c.replace(SPECIAL, '\\$&');
   }
-  return new RegExp(`^${out}$`, 'i');
+  return new RegExp(`^${out}${subtree ? '(?:/.*)?' : ''}/?$`, 'i');
 }
 
 export function matchesGlob(value: string, glob: string): boolean {
