@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: false
+  commands:
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+    hygiene:
+      run: node scripts/check-hygiene.mjs --staged
+
+commit-msg:
+  commands:
+    format:
+      run: node scripts/check-commit-msg.mjs {1}

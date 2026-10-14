@@ -1,0 +1,17 @@
+# data that must never be committed (guarded by tests/hygiene.test.ts)
+*.db
+*.db-*
+*.jsonl
+*.zip
+*.log
+.env*
+local/
+uploads/
+exports/
+coverage/
+.hansard/
+
+# build and tooling
+node_modules/
+dist/
+*.tsbuildinfo
