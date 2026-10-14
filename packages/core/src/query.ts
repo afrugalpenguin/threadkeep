@@ -9,6 +9,7 @@ import type { Db } from './store/db.js';
 
 export class UsageError extends Error {}
 export class NotFoundError extends Error {}
+export class AmbiguousError extends Error {}
 
 export function parseSince(value: string, now: Date = new Date()): string {
   const relative = /^(\d+)([hdw])$/.exec(value.trim());
@@ -152,7 +153,7 @@ export function getSession(
     const count = (
       db.prepare('select count(*) as n from sessions where excluded = 0 and substr(id, 1, ?) = ?').get(idOrPrefix.length, idOrPrefix) as { n: number }
     ).n;
-    throw new UsageError(`ambiguous session id prefix: ${count} sessions match`);
+    throw new AmbiguousError(`ambiguous session id prefix: ${count} sessions match`);
   }
   const id = (matches[0] as { id: string }).id;
   const session = db
