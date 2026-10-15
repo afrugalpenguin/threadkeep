@@ -6,6 +6,7 @@ import {
   changeExclusion,
   getSession,
   ingestAll,
+  listFacets,
   listSessions,
   machineSummary,
   matchesGlob,
@@ -151,6 +152,22 @@ describe('sessions and show', () => {
       expect(() => getSession(db, 'aaaaaaaa')).toThrow(/ambiguous.*2 sessions/);
       expect(() => getSession(db, 'zzzz')).toThrow(NotFoundError);
       expect(() => getSession(db, "a'; drop")).toThrow(NotFoundError);
+    });
+  });
+});
+
+describe('listFacets', () => {
+  it('lists sources, projects and machines with sessions, skipping excluded ones', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const f = listFacets(m.ctx, db);
+      expect(f.sources).toEqual(['claude-code']);
+      expect(f.projects).toContain('/home/alice/projects/other');
+      expect(f.machines.map((x) => x.id)).toEqual([m.ctx.machineId]);
+      applyExclusions(db, { projectGlobs: ['**/projects/other'], sessionIds: [] });
+      expect(listFacets(m.ctx, db).projects).not.toContain('/home/alice/projects/other');
+      applyExclusions(db, { projectGlobs: [], sessionIds: [S1, S2, S3] });
+      expect(listFacets(m.ctx, db)).toMatchObject({ sources: [], projects: [], machines: [] });
     });
   });
 });

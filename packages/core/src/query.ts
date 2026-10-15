@@ -248,3 +248,18 @@ export function machineSummary(ctx: HansardContext, db: Db): MachineInfo[] {
     .map(([id, label]) => ({ id, label, sessions: counts.get(id) ?? 0, current: id === ctx.machineId }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
+
+export interface Facets {
+  sources: string[];
+  projects: string[];
+  machines: MachineInfo[];
+}
+
+export function listFacets(ctx: HansardContext, db: Db): Facets {
+  const column = (sql: string) => (db.prepare(sql).all() as { v: string }[]).map((r) => r.v);
+  return {
+    sources: column('select distinct source as v from sessions where excluded = 0 order by v'),
+    projects: column('select distinct project_dir as v from sessions where excluded = 0 and project_dir is not null order by v'),
+    machines: machineSummary(ctx, db).filter((m) => m.sessions > 0),
+  };
+}
