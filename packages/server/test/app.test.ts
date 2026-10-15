@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { createApp } from '../src/app.js';
 import { HOST, TOKEN, seededApp } from './helpers.js';
 
 const apps: { close(): Promise<unknown> }[] = [];
+// Must run before the core helper's temp-dir cleanup (vitest runs afterEach hooks in reverse registration order) so Windows can delete the db file.
 afterEach(async () => {
   while (apps.length > 0) await apps.pop()?.close();
 });
@@ -39,5 +41,14 @@ describe('index page', () => {
     const { app } = await setup();
     expect((await app.inject({ url: '/app.js', headers: { host: HOST } })).statusCode).toBe(404);
     expect((await app.inject({ url: '/../package.json', headers: { host: HOST } })).statusCode).toBe(404);
+  });
+});
+
+describe('token format', () => {
+  it('refuses a token that is not lowercase hex, since it is embedded unescaped in the page', async () => {
+    const { m } = await setup();
+    for (const token of ['', 'short', 'g'.repeat(48), `${'a'.repeat(47)}"`]) {
+      expect(() => createApp(m.ctx, { token, port: 4477, log: () => {}, publicDir: m.userHome }), token).toThrow(/token/);
+    }
   });
 });

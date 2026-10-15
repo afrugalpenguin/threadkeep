@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { timingSafeEqual } from 'node:crypto';
-import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AddressInfo } from 'node:net';
-import { openDb, type HansardContext } from '@hansard/core';
+import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from '@hansard/core';
+import { registerRoutes } from './routes.js';
 
 export interface AppOptions {
   token: string;
@@ -54,17 +55,35 @@ export function tokenMatches(expected: string, given: unknown): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+function securityHeaders(reply: FastifyReply): void {
+  reply.header('content-security-policy', CSP);
+  reply.header('x-content-type-options', 'nosniff');
+  reply.header('referrer-policy', 'no-referrer');
+  reply.header('cache-control', 'no-store');
+}
+
 export function createApp(ctx: HansardContext, options: AppOptions): FastifyInstance {
-  const app = Fastify({ logger: false });
+  // The token is embedded unescaped in the page, so only a plain hex string is acceptable.
+  if (!/^[0-9a-f]{32,}$/.test(options.token)) throw new Error('invalid token: expected at least 32 lowercase hex characters');
+  const hostAllowed = (host: string | undefined): boolean => {
+    const port = (app.server.address() as AddressInfo | null)?.port ?? options.port;
+    return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
+  };
+  // Malformed URLs (for example /%zz) never reach the hooks, so answer them here without echoing the path.
+  const app: FastifyInstance = Fastify({
+    logger: false,
+    frameworkErrors: (_error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+      securityHeaders(reply);
+      if (!hostAllowed(request.headers.host)) return reply.code(403).send({ error: 'forbidden host' });
+      return reply.code(400).send({ error: 'bad request' });
+    },
+  });
   const db = openDb(ctx.dbPath);
   app.decorate('db', db);
   app.addHook('onClose', async () => db.close());
 
-  const boundPort = () => (app.server.address() as AddressInfo | null)?.port ?? options.port;
   app.addHook('onRequest', async (request, reply) => {
-    const port = boundPort();
-    const host = request.headers.host ?? '';
-    if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) {
+    if (!hostAllowed(request.headers.host)) {
       return reply.code(403).send({ error: 'forbidden host' });
     }
     if (request.method !== 'GET' && request.method !== 'HEAD' && !tokenMatches(options.token, request.headers['x-hansard-token'])) {
@@ -72,10 +91,7 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
     }
   });
   app.addHook('onSend', async (_request, reply, payload) => {
-    reply.header('content-security-policy', CSP);
-    reply.header('x-content-type-options', 'nosniff');
-    reply.header('referrer-policy', 'no-referrer');
-    reply.header('cache-control', 'no-store');
+    securityHeaders(reply);
     return payload;
   });
   // Method, route template and status only: never the query string, which can hold search text.
@@ -91,6 +107,16 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
       return reply.type(type).send(fs.readFileSync(file));
     });
   }
+  registerRoutes(app, ctx);
+  app.setErrorHandler(async (error: FastifyError, request, reply) => {
+    if (error instanceof UsageError) return reply.code(400).send({ error: error.message });
+    if (error instanceof NotFoundError) return reply.code(404).send({ error: error.message });
+    if (error instanceof AmbiguousError) return reply.code(409).send({ error: error.message });
+    if (error.validation) return reply.code(400).send({ error: 'invalid request' });
+    if (error.statusCode !== undefined && error.statusCode < 500) return reply.code(error.statusCode).send({ error: 'bad request' });
+    options.log(`error ${request.method} ${routeOf(request)}: ${safeMessage(ctx, error)}`);
+    return reply.code(500).send({ error: 'internal error' });
+  });
   return app;
 }
 

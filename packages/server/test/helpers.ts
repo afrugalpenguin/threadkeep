@@ -12,7 +12,13 @@ export const HOST = `127.0.0.1:${PORT}`;
 // Assembled at runtime so no scanner sees a literal token in this file.
 export const SECRET = ['AKIA', 'A1'.repeat(8)].join('');
 
-const at = (sid: string, n: number) => ({ sessionId: sid, uuid: `${sid.slice(0, 2)}${n}`, timestamp: `2026-04-0${n}T10:00:00.000Z` });
+const at = (sid: string, n: number, cwd?: string) => ({
+  sessionId: sid,
+  uuid: `${sid.slice(0, 2)}${n}`,
+  timestamp: `2026-04-0${n}T10:00:00.000Z`,
+  ...(cwd ? { cwd } : {}),
+});
+const SECRET_PROJECT = '/home/alice/projects/secret';
 
 export async function seededApp(extra: Partial<AppOptions> = {}) {
   const m: Machine = makeMachine();
@@ -26,7 +32,7 @@ export async function seededApp(extra: Partial<AppOptions> = {}) {
       ]) +
       toolResultLine(at(S1, 3), 'tu1', 'edited'),
   );
-  writeSession(m.claudeRoot, S2, userText(at(S2, 4), 'hidden question excluded'), '-home-alice-projects-secret');
+  writeSession(m.claudeRoot, S2, userText(at(S2, 4, SECRET_PROJECT), 'hidden question excluded'), '-home-alice-projects-secret');
   await ingestAll(m.ctx);
   const db = openDb(m.ctx.dbPath);
   db.prepare(
