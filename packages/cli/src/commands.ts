@@ -12,6 +12,7 @@ import {
   sourcesCommand,
 } from './commands/simple.js';
 import { watchCommand } from './commands/watch.js';
+import { uiCommand } from './commands/ui.js';
 
 export const commands: Record<string, Command> = {
   ingest: ingestCommand,
@@ -24,5 +25,6 @@ export const commands: Record<string, Command> = {
   machine: machineCommand,
   doctor: doctorCommand,
   watch: watchCommand,
+  ui: uiCommand,
   import: importCommand,
 };

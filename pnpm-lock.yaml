@@ -26,6 +26,9 @@ importers:
       '@hansard/core':
         specifier: workspace:*
         version: link:../core
+      '@hansard/server':
+        specifier: workspace:*
+        version: link:../server
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
