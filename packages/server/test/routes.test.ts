@@ -35,7 +35,9 @@ describe('read routes', () => {
     expect(((await get('/api/sessions?limit=1&offset=1')).json() as unknown[]).length).toBe(1);
     expect(((await get('/api/sessions?project=secret')).json() as { id: string }[]).map((s) => s.id)).toEqual([S2]);
     expect((await get('/api/sessions?sort=nonsense')).status).toBe(400);
-    expect((await get('/api/sessions?since=garbage')).status).toBe(400);
+    const badSince = await get('/api/sessions?since=garbage');
+    expect(badSince.status).toBe(400);
+    expect(badSince.body).not.toContain('garbage');
     expect((await get('/api/sessions?limit=501')).status).toBe(400);
   });
 

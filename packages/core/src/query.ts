@@ -25,7 +25,7 @@ export function parseSince(value: string, now: Date = new Date()): string {
     return new Date(now.getTime() - Number(relative[1]) * unit).toISOString();
   }
   if (/^\d{4}-\d{2}-\d{2}([T ][\d:.]+Z?)?$/.test(value.trim()) && !Number.isNaN(Date.parse(value))) return value.trim();
-  throw new UsageError(`invalid --since value: ${value} (use an ISO date or a duration like 12h, 7d, 2w)`);
+  throw new UsageError(`invalid since value: use a duration like 7d or a date like 2026-10-01`);
 }
 
 // One quoted token per whitespace-separated word, ANDed, so user input can never be FTS5 syntax.

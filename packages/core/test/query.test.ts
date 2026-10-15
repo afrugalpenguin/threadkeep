@@ -108,6 +108,7 @@ describe('search', () => {
     expect(parseSince('2w', now)).toBe('2026-02-24T12:00:00.000Z');
     expect(parseSince('2026-01-05')).toBe('2026-01-05');
     expect(() => parseSince('yesterday')).toThrow(UsageError);
+    expect(() => parseSince('yesterday')).toThrow(/^invalid since value: use a duration like 7d or a date like 2026-10-01$/);
   });
 });
 
