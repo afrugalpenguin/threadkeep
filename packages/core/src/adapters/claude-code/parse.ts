@@ -40,10 +40,13 @@ function resultText(content: unknown): string {
 // whitespace) with one of these markers is system generated:
 //   <local-command-stdout>, <local-command-stderr>, <local-command-caveat>  output of local slash commands
 //   <task-notification>                                                     background task reports
+//   <bash-stdout>, <bash-stderr>                                            output of the user's ! shell commands
+//   <ide_opened_file>, <ide_selection>                                      editor context injected ahead of a prompt
+//   <user-prompt-submit-hook>, <system-reminder>                            hook output and harness reminders
 //   [Request interrupted by user  (also "... for tool use]")                 interruption markers
 // Lines flagged isMeta (skill bodies, caveats) or isCompactSummary are handled by the caller.
-// `<command-name>` records are NOT listed: the human typed those slash commands.
-const SYSTEM_TEXT = /^\s*(?:<local-command-(?:stdout|stderr|caveat)>|<task-notification>|\[Request interrupted by user)/;
+// `<command-name>` and `<bash-input>` are NOT listed: the human typed those.
+const SYSTEM_TEXT = /^\s*(?:<local-command-(?:stdout|stderr|caveat)>|<task-notification>|<bash-(?:stdout|stderr)>|<ide_(?:opened_file|selection)>|<user-prompt-submit-hook>|<system-reminder>|\[Request interrupted by user)/;
 export function isSystemGeneratedUserText(text: string): boolean {
   return SYSTEM_TEXT.test(text);
 }

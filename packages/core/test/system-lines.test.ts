@@ -15,6 +15,12 @@ describe('isSystemGeneratedUserText', () => {
     ['  \n<local-command-stderr>bad</local-command-stderr>'],
     ['<local-command-caveat>Caveat: generated</local-command-caveat>'],
     ['<task-notification>done</task-notification>'],
+    ['<bash-stdout>out</bash-stdout>'],
+    ['<bash-stderr>err</bash-stderr>'],
+    ['<ide_opened_file>The user opened a.ts</ide_opened_file>'],
+    ['<ide_selection>selected</ide_selection>'],
+    ['<user-prompt-submit-hook>ok</user-prompt-submit-hook>'],
+    ['\n <system-reminder>note</system-reminder>'],
     ['[Request interrupted by user]'],
     ['[Request interrupted by user for tool use]'],
   ])('flags %s', (text) => expect(isSystemGeneratedUserText(text)).toBe(true));
@@ -22,6 +28,7 @@ describe('isSystemGeneratedUserText', () => {
   it.each([
     ['please fix the bug'],
     ['<command-name>/clear</command-name>'],
+    ['<bash-input>ls</bash-input>'],
     ['what does <task-notification> mean here?'],
     ['I saw "[Request interrupted by user]" in the log'],
     [''],
@@ -99,5 +106,28 @@ describe('session titles ignore system generated lines', () => {
   it('leaves the title empty when only system lines exist', async () => {
     const title = await titleOf(flaggedUserText(b(1), 'Base directory for this skill: /x', { isMeta: true }));
     expect(title ?? '').toBe('');
+  });
+});
+
+describe('ide context blocks ahead of a human prompt', () => {
+  it('yields a system event then a user event and titles from the human text', async () => {
+    const m = makeMachine();
+    writeSession(
+      m.claudeRoot,
+      SID,
+      userText(b(1), [
+        { type: 'text', text: '<ide_opened_file>The user opened a.ts</ide_opened_file>' },
+        { type: 'text', text: 'explain this function' },
+      ]),
+    );
+    await ingestAll(m.ctx);
+    const db = openDb(m.ctx.dbPath);
+    try {
+      const roles = db.prepare('select role from events order by id').all() as { role: string }[];
+      expect(roles.map((r) => r.role).sort()).toEqual(['system', 'user']);
+      expect((db.prepare('select title from sessions').get() as { title: string }).title).toBe('explain this function');
+    } finally {
+      db.close();
+    }
   });
 });
