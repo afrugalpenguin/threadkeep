@@ -45,3 +45,9 @@ export function filesUpTo(turns: Turn<TurnEvent>[], upTo: number): FileTouch[] {
   }
   return [...files.values()].sort((a, b) => b.count - a.count || a.file.localeCompare(b.file));
 }
+
+// First non-empty line, trimmed and cut to max characters with a trailing "...".
+export function firstLine(text: string, max: number): string {
+  const line = text.split('\n').find((l) => l.trim() !== '')?.trim() ?? '';
+  return line.length > max ? `${line.slice(0, max - 3)}...` : line;
+}

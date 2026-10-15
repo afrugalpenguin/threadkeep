@@ -3,7 +3,7 @@ import type { DecisionRow, ShownEvent, ShownSession } from '@hansard/core';
 import { api } from '../api.js';
 import { navigate } from '../app.js';
 import { buildHash, type Params } from '../lib/route.js';
-import { filesUpTo, groupTurns, turnOfEvent } from '../lib/turns.js';
+import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../lib/turns.js';
 
 // Mirrors core's TOOL_OUTPUT_SEPARATOR; the client only needs the summary half.
 const OUTPUT_SEPARATOR = '\n--- output ---\n';
@@ -36,6 +36,16 @@ function EventView({ event, flash }: { event: ShownEvent; flash: boolean }) {
         <div class="role">thinking</div>
         <pre class="content thinking">{event.content}</pre>
       </div>
+    );
+  }
+  if (event.role === 'system') {
+    return (
+      <details class={`${cls} system`} id={`event-${event.id}`}>
+        <summary>
+          system <span class="muted">{firstLine(event.content, 80)}</span>
+        </summary>
+        <pre class="content">{event.content}</pre>
+      </details>
     );
   }
   return (

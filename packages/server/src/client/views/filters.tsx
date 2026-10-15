@@ -82,6 +82,7 @@ export function Filters({ params, onChange, extra = false }: Props) {
               <option value="user">user</option>
               <option value="assistant">assistant</option>
               <option value="tool">tool</option>
+              <option value="system">system</option>
             </select>
           </label>
           <label class="check">

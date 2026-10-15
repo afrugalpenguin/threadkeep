@@ -310,6 +310,21 @@ pre.thinking {
   font-style: italic;
 }
 
+details.system {
+  margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+details.system summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+details.system pre.content {
+  font-size: 0.9rem;
+}
+
 details.tool summary {
   cursor: pointer;
   overflow-wrap: anywhere;

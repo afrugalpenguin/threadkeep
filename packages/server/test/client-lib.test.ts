@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filesUpTo, groupTurns, turnOfEvent } from '../src/client/lib/turns.js';
+import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../src/client/lib/turns.js';
 import { segments } from '../src/client/lib/highlight.js';
 import { buildHash, parseHash } from '../src/client/lib/route.js';
 import { MARK_CLOSE as C, MARK_OPEN as O } from '../src/shared/marks.js';
@@ -18,6 +18,22 @@ describe('groupTurns', () => {
     expect(turnOfEvent(turns, 'a1')).toBe(0);
     expect(turnOfEvent(turns, 'u2')).toBe(1);
     expect(turnOfEvent(turns, 'missing')).toBe(0);
+  });
+});
+
+describe('system events in turns', () => {
+  it('does not start a turn', () => {
+    const turns = groupTurns([ev('u1', 'user'), ev('s1', 'system'), ev('a1', 'assistant'), ev('s2', 'system'), ev('u2', 'user')]);
+    expect(turns.map((t) => t.events.map((e) => e.id))).toEqual([['u1', 's1', 'a1', 's2'], ['u2']]);
+  });
+});
+
+describe('firstLine', () => {
+  it('takes the first non-empty line and truncates with an ellipsis', () => {
+    expect(firstLine('\n  hello world\nsecond', 80)).toBe('hello world');
+    expect(firstLine('x'.repeat(100), 80)).toBe(`${'x'.repeat(77)}...`);
+    expect(firstLine('x'.repeat(80), 80)).toBe('x'.repeat(80));
+    expect(firstLine('', 80)).toBe('');
   });
 });
 
