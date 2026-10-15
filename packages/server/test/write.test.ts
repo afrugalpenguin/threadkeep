@@ -80,3 +80,28 @@ describe('stricter body handling', () => {
     expect(plain.statusCode).toBe(415);
   });
 });
+
+describe('write guard', () => {
+  it('rejects a correct token with a foreign host', async () => {
+    const { app } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/decisions/d1/status',
+      headers: { host: 'evil.example:80', 'content-type': 'application/json', 'x-hansard-token': TOKEN },
+      payload: JSON.stringify({ status: 'confirmed' }),
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('rejects other methods without a token and never succeeds with one', async () => {
+    const { app } = await setup();
+    for (const method of ['OPTIONS', 'PUT', 'DELETE'] as const) {
+      const bare = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST } });
+      expect(bare.statusCode, method).toBe(403);
+    }
+    for (const method of ['PUT', 'DELETE'] as const) {
+      const authed = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST, 'x-hansard-token': TOKEN } });
+      expect(authed.statusCode, method).toBeGreaterThanOrEqual(400);
+    }
+  });
+});

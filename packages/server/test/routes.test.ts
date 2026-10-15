@@ -104,6 +104,7 @@ describe('safety across every read route', () => {
       '/api/search?q=visible',
       '/api/search?q=visible&thinking=true',
       '/api/search?q=key',
+      '/api/search?q=considering&thinking=true',
       '/api/search?q=key&role=tool',
       `/api/sessions/${S1}`,
       `/api/sessions/${S1}?expandTools=true`,
@@ -112,6 +113,7 @@ describe('safety across every read route', () => {
       '/api/decisions',
     ];
     expect(((await get('/api/search?q=key')).json() as unknown[]).length).toBeGreaterThan(0);
+    expect(((await get('/api/search?q=considering&thinking=true')).json() as unknown[]).length).toBeGreaterThan(0);
     const thinking = await get(`/api/sessions/${S1}?thinking=true&expandTools=true`);
     expect(thinking.body).toContain('considering');
     for (const url of urls) {
