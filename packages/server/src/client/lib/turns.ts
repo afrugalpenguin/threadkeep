@@ -36,7 +36,7 @@ export function filesUpTo(turns: Turn<TurnEvent>[], upTo: number): FileTouch[] {
   const files = new Map<string, FileTouch>();
   for (const turn of turns.slice(0, upTo + 1)) {
     for (const event of turn.events) {
-      for (const file of event.files_touched) {
+      for (const file of new Set(event.files_touched)) {
         const seen = files.get(file);
         if (seen) seen.count += 1;
         else files.set(file, { file, count: 1, firstTurn: turn.index });

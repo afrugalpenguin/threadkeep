@@ -37,6 +37,13 @@ describe('filesUpTo', () => {
   });
 });
 
+describe('filesUpTo repeats', () => {
+  it('counts a file once per event even when the event lists it twice', () => {
+    const turns = groupTurns([ev('u1', 'user'), ev('t1', 'tool', 'tool', ['a.ts', 'a.ts'])]);
+    expect(filesUpTo(turns, 0)).toEqual([{ file: 'a.ts', count: 1, firstTurn: 0 }]);
+  });
+});
+
 describe('segments', () => {
   it('splits a marked snippet and leaves brackets alone', () => {
     expect(segments(`a [b] ${O}hit${C} c ${O}two${C}`)).toEqual([
