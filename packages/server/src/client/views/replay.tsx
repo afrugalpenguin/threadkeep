@@ -19,7 +19,7 @@ function EventView({ event, flash }: { event: ShownEvent; flash: boolean }) {
   if (event.kind === 'tool') {
     const summary = event.content.split(TOOL_OUTPUT_SEPARATOR)[0] ?? '';
     return (
-      <details class={`${cls} tool`} id={`event-${event.id}`}>
+      <details class={`${cls} tool`} id={`event-${event.id}`} open={flash}>
         <summary>
           <strong>{event.tool_name ?? 'tool'}</strong> {summary}
         </summary>
@@ -38,7 +38,7 @@ function EventView({ event, flash }: { event: ShownEvent; flash: boolean }) {
   }
   if (event.role === 'system') {
     return (
-      <details class={`${cls} system`} id={`event-${event.id}`}>
+      <details class={`${cls} system`} id={`event-${event.id}`} open={flash}>
         <summary>
           system <span class="muted">{firstLine(event.content, 80)}</span>
         </summary>
@@ -86,9 +86,12 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
     );
   }, [id, thinking]);
 
+  // Decisions match the full session id exactly, so wait for the resolved id (the URL id may be a prefix).
+  const resolvedId = data?.session.id;
   useEffect(() => {
-    api.decisions({ session: id }).then(setDecisions, () => setDecisions([]));
-  }, [id]);
+    if (!resolvedId) return;
+    api.decisions({ session: resolvedId }).then(setDecisions, () => setDecisions([]));
+  }, [resolvedId]);
 
   const turns = useMemo(() => groupTurns(data?.events ?? []), [data]);
   const last = Math.max(0, turns.length - 1);

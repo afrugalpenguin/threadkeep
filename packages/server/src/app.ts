@@ -18,7 +18,7 @@ const CSP = [
   "script-src 'self'",
   "style-src 'self'",
   "connect-src 'self'",
-  "img-src 'self' data:",
+  "img-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",

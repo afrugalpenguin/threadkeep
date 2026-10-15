@@ -33,6 +33,7 @@ describe('index page', () => {
     expect(res.body).toContain(`<meta name="hansard-token" content="${TOKEN}">`);
     expect(res.headers['content-security-policy']).toContain("default-src 'none'");
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(res.headers['content-security-policy']).toContain("img-src 'none'");
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
