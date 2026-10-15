@@ -28,18 +28,18 @@ All routes live under `/api`. Input is validated with Fastify JSON schemas.
 | `GET /api/sessions?source&project&since&machine&sort&limit&offset` | `listSessions` |
 | `GET /api/search?q&source&project&since&role&machine&sort&thinking&limit` | `search` |
 | `GET /api/sessions/:id?thinking&expandTools` | `getSession` |
-| `GET /api/facets` | `listFacets` |
+| `GET /api/facets` | `listFacets(ctx, db)` |
 | `GET /api/decisions?status&session` | `listDecisions` |
 | `POST /api/decisions/:id/status` with `{ "status": "confirmed" \| "dismissed" }` | `setDecisionStatus` |
 
-Errors: `UsageError` maps to 400, `NotFoundError` to 404, `AmbiguousError` to 409, anything else to 500 with the body `internal error`. Detail goes to the terminal log through the safe message helper.
+Errors: `UsageError` maps to 400, `NotFoundError` to 404, `AmbiguousError` to 409, schema validation failures to 400 with `invalid request`, other 4xx framework errors to their status with `bad request`, anything else to 500 with the body `internal error`. Detail goes to the terminal log through the safe message helper.
 
 ## Core additions
 
 - `listDecisions(db, { status, session })`, joined to `sessions` with `excluded = 0`.
 - `setDecisionStatus(db, id, status)`, allowing only `proposed` to `confirmed` or `dismissed`.
 - `offset` on `listSessions`.
-- `listFacets(db)`: distinct sources, machines with labels, and projects over non-excluded sessions.
+- `listFacets(ctx, db)`: distinct sources, machines with labels, and projects over non-excluded sessions.
 
 These are shared with the MCP server later.
 
@@ -65,7 +65,7 @@ All tests use synthetic fixtures in a temp dir per test.
 
 - `files` field: `dist`, README, LICENSE.
 - `pnpm build` runs `tsc` then the esbuild client bundle. Root typecheck and CI include the package.
-- New dependencies: `fastify`, `preact` (runtime), `esbuild` (dev).
+- New dependencies: `fastify` (runtime), `preact` and `esbuild` (dev). The client is bundled by esbuild, so preact is not needed at runtime.
 
 ## Implementation notes
 
@@ -73,8 +73,9 @@ Where the build differs from the plan above, and why:
 
 - Core rejects a `limit` or `offset` that is not a non-negative integer with `UsageError`, so no caller can reach SQLite with `-1` (unlimited) or a fraction. Decision writes take the write lock up front and check that exactly one row changed.
 - Every response carries the security headers, including malformed URLs (`frameworkErrors`) and unknown routes (a custom 404 that does not echo the URL). Body validation rejects unknown fields and array-wrapped values, and `text/plain` posts get 415.
+- Error bodies never echo request input. `UsageError` messages are fixed guidance text (for example an invalid `since` value reports how to write one, not the value given), validation failures return `invalid request`, and other client errors return `bad request`.
 - `createApp` refuses a token that is not lowercase hex, since it is embedded in the page unescaped.
-- Claude Code lines that the human did not type (`isMeta`, compaction summaries, local command and bash output, task notifications, interrupt notices, IDE context, hook output and system reminders) are stored with role `system`, so they no longer start replay turns, become titles or match `--role user`. Replay shows them collapsed. Rows ingested before this change keep role `user` until `hansard rebuild` is run.
+- Claude Code lines that the human did not type (`isMeta`, compaction summaries, local command and bash output, task notifications, interrupt notices, IDE context, hook output and system reminders) are stored with role `system`, so they no longer start replay turns, become titles or match `--role user`. Replay shows them collapsed. Rows ingested before this change keep role `user` until `hansard rebuild` is run. After upgrading, run `hansard rebuild` once so sessions ingested earlier pick up the system role.
 - The replay links search hits on thinking events with thinking shown, and filter text boxes keep a local draft so a re-render cannot discard typing.
 
 ## Out of scope
