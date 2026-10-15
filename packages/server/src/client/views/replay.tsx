@@ -64,6 +64,7 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
   const latest = useRef(0);
   const placed = useRef(false);
   const settled = useRef(false);
+  const shownTurn = useRef(0);
   const thinking = params.thinking === 'true';
   const eventId = params.event ?? '';
 
@@ -108,12 +109,16 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
     if (turns.length === 0) return;
     const first = !settled.current;
     settled.current = true;
+    const moved = shownTurn.current !== current;
+    shownTurn.current = current;
     if (first) {
       const target = eventId ? document.getElementById(`event-${eventId}`) : null;
       if (target) target.scrollIntoView({ block: 'center' });
       else if (eventId) document.getElementById(`turn-${current}`)?.scrollIntoView({ block: 'start' });
       return;
     }
+    // A reload that only replaced the turns (thinking toggle) keeps the reading position.
+    if (!moved) return;
     document.getElementById(`turn-${current}`)?.scrollIntoView({ block: 'start' });
   }, [current, turns]);
 

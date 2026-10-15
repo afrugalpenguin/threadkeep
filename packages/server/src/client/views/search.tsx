@@ -63,6 +63,7 @@ export function SearchView({ params }: { params: Params }) {
     <section>
       <h1>Search</h1>
       <TextFilter
+        type="search"
         class="query"
         aria-label="Search query"
         placeholder="search conversations, press Enter"
