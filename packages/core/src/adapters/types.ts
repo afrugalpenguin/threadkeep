@@ -27,7 +27,7 @@ export interface EventOut {
   sessionId: string;
   projectDir: string | null;
   timestamp: string | null;
-  role: 'user' | 'assistant' | 'tool';
+  role: 'user' | 'assistant' | 'tool' | 'system';
   kind: 'text' | 'thinking' | 'tool';
   content: string;
   toolName?: string;

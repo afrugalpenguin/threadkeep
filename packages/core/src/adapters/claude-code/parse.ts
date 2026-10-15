@@ -36,6 +36,18 @@ function resultText(content: unknown): string {
     .join('\n');
 }
 
+// Claude Code writes many `type: user` lines the human never typed. Text that starts (after leading
+// whitespace) with one of these markers is system generated:
+//   <local-command-stdout>, <local-command-stderr>, <local-command-caveat>  output of local slash commands
+//   <task-notification>                                                     background task reports
+//   [Request interrupted by user  (also "... for tool use]")                 interruption markers
+// Lines flagged isMeta (skill bodies, caveats) or isCompactSummary are handled by the caller.
+// `<command-name>` records are NOT listed: the human typed those slash commands.
+const SYSTEM_TEXT = /^\s*(?:<local-command-(?:stdout|stderr|caveat)>|<task-notification>|\[Request interrupted by user)/;
+export function isSystemGeneratedUserText(text: string): boolean {
+  return SYSTEM_TEXT.test(text);
+}
+
 export function parseClaudeCode(file: ArchiveFile, chunk: { text: string; startOffset: number }): ParseResult {
   const result: ParseResult = { records: [], events: [], patches: [], sessions: [], warnings: [] };
   const defaultSession = (file.relPath.split('/').pop() ?? '').replace(/\.jsonl$/i, '');
@@ -80,10 +92,11 @@ export function parseClaudeCode(file: ArchiveFile, chunk: { text: string; startO
     const first = result.events.length;
     const attachments: unknown[] = [];
     let imageIndex: number | null = null;
+    const flagged = obj['isMeta'] === true || obj['isCompactSummary'] === true;
     const textEvent = (role: 'user' | 'assistant', index: number, text: string): EventOut => ({
       ...common,
       id: stableId(SOURCE, sessionId, uuid, String(index)),
-      role,
+      role: role === 'user' && (flagged || isSystemGeneratedUserText(text)) ? 'system' : role,
       kind: 'text',
       content: text,
     });

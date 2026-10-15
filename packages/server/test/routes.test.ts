@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { applyExclusions, openDb } from '@hansard/core';
 import { MARK_CLOSE, MARK_OPEN } from '../src/shared/marks.js';
+import { ingestAll } from '@hansard/core';
+import { userText } from '../../core/src/adapters/claude-code/fixtures.js';
+import { writeSession } from '../../core/test/helpers.js';
 import { HOST, S1, S2, SECRET, seededApp } from './helpers.js';
 
 const apps: { close(): Promise<unknown> }[] = [];
@@ -44,6 +47,18 @@ describe('read routes', () => {
     expect((await get('/api/search')).status).toBe(400);
     expect((await get('/api/search?q=%20%20')).status).toBe(400);
     expect((await get('/api/search?q=visible&limit=501')).status).toBe(400);
+  });
+
+  it('accepts the system role in search', async () => {
+    const { get, m } = await setup();
+    const sid = 'eeeeeeee-3333-4333-8333-333333333333';
+    const at = { sessionId: sid, uuid: 'sys1', timestamp: '2026-04-05T10:00:00.000Z' };
+    writeSession(m.claudeRoot, sid, userText(at, '<task-notification>zebrafish finished</task-notification>'));
+    await ingestAll(m.ctx);
+    const hits = (await get('/api/search?q=zebrafish&role=system')).json() as { role: string }[];
+    expect(hits.map((h) => h.role)).toEqual(['system']);
+    expect(((await get('/api/search?q=zebrafish&role=user')).json() as unknown[]).length).toBe(0);
+    expect((await get('/api/search?q=zebrafish&role=bogus')).status).toBe(400);
   });
 
   it('shows a session and maps not found and ambiguous ids', async () => {

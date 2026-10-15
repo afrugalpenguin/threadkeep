@@ -56,7 +56,7 @@ export function registerRoutes(app: FastifyInstance, ctx: HansardContext): void 
           properties: {
             ...filters,
             q: text,
-            role: { type: 'string', enum: ['user', 'assistant', 'tool'] },
+            role: { type: 'string', enum: ['user', 'assistant', 'tool', 'system'] },
             sort: { type: 'string', enum: ['rank', 'time'] },
             thinking: { type: 'boolean' },
             limit: { type: 'integer', minimum: 1, maximum: 500 },

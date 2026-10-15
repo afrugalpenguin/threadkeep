@@ -85,6 +85,23 @@ describe('ingest, search, sessions, show', () => {
     expect((await box.cli('search', '"', '--thinking')).code).toBe(0);
   });
 
+  it('labels system generated messages as system in search and show', async () => {
+    const box = sandbox();
+    const sid = 'cccccccc-1111-4111-8111-111111111111';
+    const dir = path.join(box.claudeRoot, '-home-alice-projects-demo');
+    fs.mkdirSync(dir, { recursive: true });
+    const row = (uuid: string, content: string) =>
+      JSON.stringify({ type: 'user', uuid, sessionId: sid, timestamp: '2026-01-01T10:00:00.000Z', cwd: '/home/alice/projects/demo', message: { role: 'user', content } }) + '\n';
+    fs.writeFileSync(path.join(dir, `${sid}.jsonl`), row('s1', '<task-notification>narwhal done</task-notification>') + row('s2', 'a human prompt'));
+    await box.cli('ingest');
+    const hits = await box.cli('search', 'narwhal', '--role', 'system');
+    expect(hits.out).toMatch(/ {2}system {2}/);
+    expect((await box.cli('search', 'narwhal', '--role', 'user')).out).toBe('');
+    const shown = await box.cli('show', sid.slice(0, 8));
+    expect(shown.out).toContain('] system\n');
+    expect(shown.out).toContain('] user\n');
+  });
+
   it('lists sessions with the documented columns', async () => {
     const box = sandbox();
     seed(box, 2);
