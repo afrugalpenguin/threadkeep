@@ -38,6 +38,7 @@ export interface SearchOptions {
   sort?: 'rank' | 'time';
   thinking?: boolean;
   limit?: number;
+  marks?: [string, string];
 }
 
 export interface SearchHit {
@@ -55,7 +56,9 @@ export interface SearchHit {
 
 export function search(db: Db, options: SearchOptions): SearchHit[] {
   const where = ['events_fts match ?', 's.excluded = 0'];
-  const params: (string | number)[] = [ftsQuery(options.query)];
+  const [open, close] = options.marks ?? ['[', ']'];
+  // snippet's bound params appear first in the SQL text, so they come first here
+  const params: (string | number)[] = [open, close, ftsQuery(options.query)];
   if (!options.thinking) where.push("e.kind != 'thinking'");
   if (options.source) (where.push('e.source = ?'), params.push(options.source));
   if (options.project) (where.push('instr(lower(e.project_dir), lower(?)) > 0'), params.push(options.project));
@@ -67,7 +70,7 @@ export function search(db: Db, options: SearchOptions): SearchHit[] {
   const rows = db
     .prepare(
       `select e.session_id, e.id as event_id, e.timestamp, e.role, e.kind, e.project_dir, e.machine_id, e.source, s.title,
-         snippet(events_fts, 0, '[', ']', '...', 12) as snippet, substr(e.content_redacted, 1, 120) as head
+         snippet(events_fts, 0, ?, ?, '...', 12) as snippet, substr(e.content_redacted, 1, 120) as head
        from events_fts
        join events e on e.rowid = events_fts.rowid
        join sessions s on s.id = e.session_id

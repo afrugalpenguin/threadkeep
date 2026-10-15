@@ -80,6 +80,16 @@ describe('search', () => {
     });
   });
 
+  it('uses custom snippet markers when given', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const [hit] = search(db, { query: 'caching', role: 'user', marks: ['\u0002', '\u0003'] });
+      expect(hit?.snippet).toContain('\u0002caching\u0003');
+      expect(hit?.snippet).not.toContain('[caching]');
+      expect(search(db, { query: 'caching', role: 'user' })[0]?.snippet).toContain('[caching]');
+    });
+  });
+
   it('survives quotes and fts syntax in the query', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {
