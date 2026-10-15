@@ -28,9 +28,10 @@ export async function seededApp(extra: Partial<AppOptions> = {}) {
     userText(at(S1, 1), `visible question with key ${SECRET} inside`) +
       assistant(at(S1, 2), [
         { type: 'text', text: 'visible answer [with brackets]' },
-        { type: 'tool_use', id: 'tu1', name: 'Edit', input: { file_path: '/home/alice/projects/demo/a.ts' } },
+        { type: 'thinking', thinking: `considering ${SECRET}` },
+        { type: 'tool_use', id: 'tu1', name: 'Edit', input: { file_path: '/home/alice/projects/demo/a.ts', new_string: `k=${SECRET}` } },
       ]) +
-      toolResultLine(at(S1, 3), 'tu1', 'edited'),
+      toolResultLine(at(S1, 3), 'tu1', `edited with key ${SECRET}`),
   );
   writeSession(m.claudeRoot, S2, userText(at(S2, 4, SECRET_PROJECT), 'hidden question excluded'), '-home-alice-projects-secret');
   await ingestAll(m.ctx);

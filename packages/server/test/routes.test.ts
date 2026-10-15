@@ -33,6 +33,7 @@ describe('read routes', () => {
     expect(((await get('/api/sessions?project=secret')).json() as { id: string }[]).map((s) => s.id)).toEqual([S2]);
     expect((await get('/api/sessions?sort=nonsense')).status).toBe(400);
     expect((await get('/api/sessions?since=garbage')).status).toBe(400);
+    expect((await get('/api/sessions?limit=501')).status).toBe(400);
   });
 
   it('searches with control character markers', async () => {
@@ -42,6 +43,7 @@ describe('read routes', () => {
     expect(hits[0]?.snippet).toContain('[with brackets]');
     expect((await get('/api/search')).status).toBe(400);
     expect((await get('/api/search?q=%20%20')).status).toBe(400);
+    expect((await get('/api/search?q=visible&limit=501')).status).toBe(400);
   });
 
   it('shows a session and maps not found and ambiguous ids', async () => {
@@ -64,9 +66,38 @@ describe('read routes', () => {
 });
 
 describe('safety across every read route', () => {
-  it('never returns a raw secret', async () => {
+  it('shows the excluded-case data when nothing is excluded (positive control)', async () => {
     const { get } = await setup();
-    for (const url of ['/api/sessions', '/api/search?q=visible', '/api/search?q=key', `/api/sessions/${S1}`, `/api/sessions/${S1}?expandTools=true`, '/api/facets', '/api/decisions']) {
+    expect(((await get('/api/search?q=hidden')).json() as { session_id: string }[]).map((h) => h.session_id)).toEqual([S2]);
+    expect((await get('/api/facets')).body).toContain('projects/secret');
+  });
+
+  it('never returns a raw secret', async () => {
+    const { get, m } = await setup();
+    // Not vacuous: the raw columns really hold the secret in the user, tool input, tool output and thinking rows.
+    const db = openDb(m.ctx.dbPath);
+    const raw = db.prepare('select content, tool_input, tool_output from events where session_id = ?').all(S1) as Record<string, string | null>[];
+    db.close();
+    const holders = (column: string) => raw.filter((r) => r[column]?.includes(SECRET)).length;
+    expect(holders('content'), 'raw content').toBeGreaterThanOrEqual(2);
+    expect(holders('tool_input'), 'raw tool_input').toBeGreaterThanOrEqual(1);
+    expect(holders('tool_output'), 'raw tool_output').toBeGreaterThanOrEqual(1);
+    const urls = [
+      '/api/sessions',
+      '/api/search?q=visible',
+      '/api/search?q=visible&thinking=true',
+      '/api/search?q=key',
+      '/api/search?q=key&role=tool',
+      `/api/sessions/${S1}`,
+      `/api/sessions/${S1}?expandTools=true`,
+      `/api/sessions/${S1}?thinking=true&expandTools=true`,
+      '/api/facets',
+      '/api/decisions',
+    ];
+    expect(((await get('/api/search?q=key')).json() as unknown[]).length).toBeGreaterThan(0);
+    const thinking = await get(`/api/sessions/${S1}?thinking=true&expandTools=true`);
+    expect(thinking.body).toContain('considering');
+    for (const url of urls) {
       const res = await get(url);
       expect(res.status, url).toBe(200);
       expect(res.body, url).not.toContain(SECRET);
