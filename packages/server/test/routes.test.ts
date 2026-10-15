@@ -130,7 +130,25 @@ describe('safety across every read route', () => {
   });
 });
 
+describe('error responses carry no request content', () => {
+  it('answers unknown routes with a bare 404 and security headers', async () => {
+    const { app } = await setup();
+    const res = await app.inject({ url: '/nope?q=mysearchtext', headers: { host: HOST } });
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({ error: 'not found' });
+    expect(res.body).not.toContain('mysearchtext');
+    expect(res.headers['content-security-policy']).toContain("default-src 'none'");
+  });
+});
+
 describe('malformed urls', () => {
+  it('logs the method and status but never the url', async () => {
+    const { app, lines } = await setup();
+    await app.inject({ url: '/%zz', headers: { host: HOST } });
+    expect(lines).toContain('GET malformed 400');
+    expect(lines.join('\n')).not.toContain('%zz');
+  });
+
   it('returns a bare 400 with security headers and never echoes the path', async () => {
     const { app } = await setup();
     const res = await app.inject({ url: '/%zz', headers: { host: HOST } });

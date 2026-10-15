@@ -69,17 +69,22 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
     const port = (app.server.address() as AddressInfo | null)?.port ?? options.port;
     return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
   };
-  // Malformed URLs (for example /%zz) never reach the hooks, so answer them here without echoing the path.
   const app: FastifyInstance = Fastify({
     logger: false,
     // Reject unknown body fields instead of silently stripping them (Fastify's AJV default).
-    ajv: { customOptions: { removeAdditional: false } },
+    // coerceTypes true (not Fastify's 'array') so a body like {"status":["x"]} is rejected, not unwrapped.
+    ajv: { customOptions: { removeAdditional: false, coerceTypes: true } },
+    // Malformed URLs (for example /%zz) never reach the hooks, so answer them here without echoing the path.
     frameworkErrors: (_error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
       securityHeaders(reply);
-      if (!hostAllowed(request.headers.host)) return reply.code(403).send({ error: 'forbidden host' });
-      return reply.code(400).send({ error: 'bad request' });
+      const forbidden = !hostAllowed(request.headers.host);
+      const status = forbidden ? 403 : 400;
+      options.log(`${request.method} malformed ${status}`);
+      return reply.code(status).send({ error: forbidden ? 'forbidden host' : 'bad request' });
     },
   });
+  app.removeContentTypeParser('text/plain');
+  app.setNotFoundHandler(async (_request, reply) => reply.code(404).send({ error: 'not found' }));
   const db = openDb(ctx.dbPath);
   app.decorate('db', db);
   app.addHook('onClose', async () => db.close());

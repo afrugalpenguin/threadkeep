@@ -65,3 +65,18 @@ describe('error responses on writes', () => {
     expect(res.headers['content-security-policy']).toContain("default-src 'none'");
   });
 });
+
+describe('stricter body handling', () => {
+  it('rejects an array where a string is expected and text/plain posts', async () => {
+    const { app, post } = await setup();
+    const auth = { 'x-hansard-token': TOKEN };
+    expect((await post('d1', { status: ['dismissed'] }, auth)).statusCode).toBe(400);
+    const plain = await app.inject({
+      method: 'POST',
+      url: '/api/decisions/d1/status',
+      headers: { host: HOST, 'content-type': 'text/plain', ...auth },
+      payload: '{"status":"dismissed"}',
+    });
+    expect(plain.statusCode).toBe(415);
+  });
+});
