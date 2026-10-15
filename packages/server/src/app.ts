@@ -72,6 +72,8 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
   // Malformed URLs (for example /%zz) never reach the hooks, so answer them here without echoing the path.
   const app: FastifyInstance = Fastify({
     logger: false,
+    // Reject unknown body fields instead of silently stripping them (Fastify's AJV default).
+    ajv: { customOptions: { removeAdditional: false } },
     frameworkErrors: (_error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
       securityHeaders(reply);
       if (!hostAllowed(request.headers.host)) return reply.code(403).send({ error: 'forbidden host' });
