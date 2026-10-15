@@ -11,6 +11,13 @@ export class UsageError extends Error {}
 export class NotFoundError extends Error {}
 export class AmbiguousError extends Error {}
 
+// Fail closed before SQLite sees it: a negative limit means unlimited there and a fraction throws a raw error.
+export function pagingValue(value: number | undefined, name: string, fallback: number): number {
+  const n = value ?? fallback;
+  if (!Number.isInteger(n) || n < 0) throw new UsageError(`${name} must be a non-negative integer`);
+  return n;
+}
+
 export function parseSince(value: string, now: Date = new Date()): string {
   const relative = /^(\d+)([hdw])$/.exec(value.trim());
   if (relative) {
@@ -65,7 +72,7 @@ export function search(db: Db, options: SearchOptions): SearchHit[] {
   if (options.since) (where.push('e.timestamp >= ?'), params.push(parseSince(options.since)));
   if (options.role) (where.push('e.role = ?'), params.push(options.role));
   if (options.machine) (where.push('e.machine_id = ?'), params.push(options.machine));
-  params.push(options.limit ?? 20);
+  params.push(pagingValue(options.limit, 'limit', 20));
   const order = options.sort === 'time' ? 'e.timestamp desc, e.rowid desc' : 'rank';
   const rows = db
     .prepare(
@@ -116,8 +123,8 @@ export function listSessions(db: Db, options: ListSessionsOptions = {}): Session
     source: 'source, started_at desc',
     length: 'event_count desc',
   }[options.sort ?? 'time'];
-  params.push(options.limit ?? 50);
-  params.push(options.offset ?? 0);
+  params.push(pagingValue(options.limit, 'limit', 50));
+  params.push(pagingValue(options.offset, 'offset', 0));
   return db
     .prepare(
       `select id, source, machine_id, project_dir, started_at, ended_at, event_count, title from sessions

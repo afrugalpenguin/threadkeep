@@ -47,6 +47,16 @@ describe('listDecisions', () => {
     }
   });
 
+  it('rejects negative and fractional limits', async () => {
+    const { db } = await seeded();
+    try {
+      for (const bad of [-1, 1.5, Number.NaN]) expect(() => listDecisions(db, { limit: bad })).toThrow(UsageError);
+      expect(listDecisions(db, { limit: 0 })).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
   it('never returns decisions from excluded sessions', async () => {
     const { db } = await seeded();
     try {

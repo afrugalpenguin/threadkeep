@@ -138,6 +138,18 @@ describe('sessions and show', () => {
     });
   });
 
+  it('rejects negative and fractional paging values', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      for (const bad of [-1, 1.5, Number.NaN]) {
+        expect(() => listSessions(db, { limit: bad })).toThrow(UsageError);
+        expect(() => listSessions(db, { offset: bad })).toThrow(UsageError);
+        expect(() => search(db, { query: 'caching', limit: bad })).toThrow(UsageError);
+      }
+      expect(listSessions(db, { limit: 0 })).toEqual([]);
+    });
+  });
+
   it('shows by prefix, hides thinking and tool output unless asked, and rejects ambiguity', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {

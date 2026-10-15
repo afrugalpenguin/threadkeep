@@ -1,5 +1,5 @@
 import type { Db } from './store/db.js';
-import { NotFoundError, UsageError } from './query.js';
+import { NotFoundError, UsageError, pagingValue } from './query.js';
 
 export const DECISION_STATUSES = ['proposed', 'confirmed', 'dismissed'] as const;
 export type DecisionStatus = (typeof DECISION_STATUSES)[number];
@@ -41,7 +41,7 @@ export function listDecisions(db: Db, options: ListDecisionsOptions = {}): Decis
     where.push('d.session_id = ?');
     params.push(options.session);
   }
-  params.push(options.limit ?? 200);
+  params.push(pagingValue(options.limit, 'limit', 200));
   return db
     .prepare(
       `select ${columns} from decisions d join sessions s on s.id = d.session_id
@@ -58,9 +58,10 @@ export function setDecisionStatus(db: Db, id: string, status: 'confirmed' | 'dis
       .get(id) as { status: DecisionStatus } | undefined;
     if (!found) throw new NotFoundError('decision not found');
     if (found.status !== 'proposed') throw new UsageError(`decision is already ${found.status}`);
-    db.prepare("update decisions set status = ? where id = ? and status = 'proposed'").run(status, id);
+    const updated = db.prepare("update decisions set status = ? where id = ? and status = 'proposed'").run(status, id);
+    if (updated.changes !== 1) throw new UsageError('decision status changed, reload and try again');
     return db
       .prepare(`select ${columns} from decisions d join sessions s on s.id = d.session_id where d.id = ?`)
       .get(id) as DecisionRow;
-  })();
+  }).immediate();
 }
