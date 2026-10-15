@@ -12,6 +12,7 @@ export { claudeCodeAdapter } from './adapters/claude-code/index.js';
 export * as claudeCodeFixtures from './adapters/claude-code/fixtures.js';
 export * from './exclusions.js';
 export * from './query.js';
+export * from './decisions.js';
 export * from './import-claude-ai.js';
 export { claudeAiAdapter } from './adapters/claude-ai/index.js';
 export * as claudeAiFixtures from './adapters/claude-ai/fixtures.js';
