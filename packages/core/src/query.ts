@@ -97,6 +97,7 @@ export interface ListSessionsOptions {
   machine?: string;
   sort?: 'time' | 'project' | 'source' | 'length';
   limit?: number;
+  offset?: number;
 }
 
 export function listSessions(db: Db, options: ListSessionsOptions = {}): SessionRow[] {
@@ -113,10 +114,11 @@ export function listSessions(db: Db, options: ListSessionsOptions = {}): Session
     length: 'event_count desc',
   }[options.sort ?? 'time'];
   params.push(options.limit ?? 50);
+  params.push(options.offset ?? 0);
   return db
     .prepare(
       `select id, source, machine_id, project_dir, started_at, ended_at, event_count, title from sessions
-       where ${where.join(' and ')} order by ${order}, id limit ?`,
+       where ${where.join(' and ')} order by ${order}, id limit ? offset ?`,
     )
     .all(...params) as SessionRow[];
 }

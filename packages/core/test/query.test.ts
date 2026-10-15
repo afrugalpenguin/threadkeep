@@ -116,6 +116,17 @@ describe('sessions and show', () => {
     });
   });
 
+  it('pages with offset in a stable order', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const all = listSessions(db, { sort: 'time' }).map((s) => s.id);
+      expect(all).toHaveLength(3);
+      expect(listSessions(db, { sort: 'time', limit: 2 }).map((s) => s.id)).toEqual(all.slice(0, 2));
+      expect(listSessions(db, { sort: 'time', limit: 2, offset: 2 }).map((s) => s.id)).toEqual(all.slice(2));
+      expect(listSessions(db, { sort: 'time', offset: 3 })).toEqual([]);
+    });
+  });
+
   it('shows by prefix, hides thinking and tool output unless asked, and rejects ambiguity', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {
