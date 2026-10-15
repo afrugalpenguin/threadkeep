@@ -67,6 +67,16 @@ All tests use synthetic fixtures in a temp dir per test.
 - `pnpm build` runs `tsc` then the esbuild client bundle. Root typecheck and CI include the package.
 - New dependencies: `fastify`, `preact` (runtime), `esbuild` (dev).
 
+## Implementation notes
+
+Where the build differs from the plan above, and why:
+
+- Core rejects a `limit` or `offset` that is not a non-negative integer with `UsageError`, so no caller can reach SQLite with `-1` (unlimited) or a fraction. Decision writes take the write lock up front and check that exactly one row changed.
+- Every response carries the security headers, including malformed URLs (`frameworkErrors`) and unknown routes (a custom 404 that does not echo the URL). Body validation rejects unknown fields and array-wrapped values, and `text/plain` posts get 415.
+- `createApp` refuses a token that is not lowercase hex, since it is embedded in the page unescaped.
+- Claude Code lines that the human did not type (`isMeta`, compaction summaries, local command and bash output, task notifications, interrupt notices, IDE context, hook output and system reminders) are stored with role `system`, so they no longer start replay turns, become titles or match `--role user`. Replay shows them collapsed. Rows ingested before this change keep role `user` until `hansard rebuild` is run.
+- The replay links search hits on thinking events with thinking shown, and filter text boxes keep a local draft so a re-render cannot discard typing.
+
 ## Out of scope
 
 - Browser component tests.
