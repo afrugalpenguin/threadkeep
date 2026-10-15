@@ -5,10 +5,6 @@ import { SearchView } from './views/search.js';
 import { ReplayView } from './views/replay.js';
 import { DecisionsView } from './views/decisions.js';
 
-export function navigate(route: Route): void {
-  location.hash = buildHash(route);
-}
-
 const links: { view: 'sessions' | 'search' | 'decisions'; label: string }[] = [
   { view: 'sessions', label: 'Sessions' },
   { view: 'search', label: 'Search' },

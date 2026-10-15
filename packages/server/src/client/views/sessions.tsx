@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { SessionRow } from '@hansard/core';
 import { api, pick } from '../api.js';
-import { navigate } from '../app.js';
 import { buildHash, type Params } from '../lib/route.js';
+import { navigate } from '../lib/nav.js';
+import { SESSION_SORTS, withValidSort } from '../lib/sorts.js';
 import { Filters } from './filters.js';
 
 const PAGE = 50;
@@ -17,7 +18,7 @@ export function SessionsView({ params }: { params: Params }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const latest = useRef(0);
-  const filters = pick(params, FILTER_KEYS);
+  const filters = withValidSort(pick(params, FILTER_KEYS), SESSION_SORTS);
   const key = JSON.stringify(filters);
 
   // A newer request bumps the ticket so an older response is ignored when it lands.
@@ -86,7 +87,11 @@ export function SessionsView({ params }: { params: Params }) {
         </table>
       </div>
       {!loading && !error && rows.length === 0 && <p class="empty">no sessions found</p>}
-      {loading && <p class="muted">loading</p>}
+      {loading && (
+        <p class="muted" role="status">
+          loading
+        </p>
+      )}
       {more && !loading && (
         <button type="button" onClick={() => load(rows.length)}>
           Load more

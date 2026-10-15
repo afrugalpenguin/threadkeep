@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { DecisionRow } from '@hansard/core';
 import { api, pick } from '../api.js';
-import { navigate } from '../app.js';
 import { buildHash, type Params } from '../lib/route.js';
+import { navigate } from '../lib/nav.js';
 
 export function DecisionsView({ params }: { params: Params }) {
   const [rows, setRows] = useState<DecisionRow[]>([]);
@@ -12,9 +12,9 @@ export function DecisionsView({ params }: { params: Params }) {
   const latest = useRef(0);
   const status = params.status ?? '';
 
-  const load = () => {
+  const load = (): Promise<void> => {
     const ticket = ++latest.current;
-    api.decisions(pick(params, ['status'])).then(
+    return api.decisions(pick(params, ['status'])).then(
       (found) => {
         if (ticket !== latest.current) return;
         setRows(found);
@@ -39,7 +39,7 @@ export function DecisionsView({ params }: { params: Params }) {
     setError('');
     try {
       await api.setDecision(id, next);
-      load();
+      await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'request failed');
     } finally {

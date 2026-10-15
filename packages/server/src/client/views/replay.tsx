@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { DecisionRow, ShownEvent, ShownSession } from '@hansard/core';
 import { api } from '../api.js';
-import { navigate } from '../app.js';
 import { buildHash, type Params } from '../lib/route.js';
+import { navigate } from '../lib/nav.js';
+import { TOOL_OUTPUT_SEPARATOR } from '../../shared/separator.js';
 import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../lib/turns.js';
-
-// Mirrors core's TOOL_OUTPUT_SEPARATOR; the client only needs the summary half.
-const OUTPUT_SEPARATOR = '\n--- output ---\n';
 
 const when = (ts: string | null) => (ts ? new Date(ts).toLocaleString() : '');
 const basename = (dir: string | null) => (dir ? (dir.split(/[\\/]/).filter(Boolean).pop() ?? dir) : '');
@@ -19,7 +17,7 @@ function isTyping(target: EventTarget | null): boolean {
 function EventView({ event, flash }: { event: ShownEvent; flash: boolean }) {
   const cls = flash ? 'event flash' : 'event';
   if (event.kind === 'tool') {
-    const summary = event.content.split(OUTPUT_SEPARATOR)[0] ?? '';
+    const summary = event.content.split(TOOL_OUTPUT_SEPARATOR)[0] ?? '';
     return (
       <details class={`${cls} tool`} id={`event-${event.id}`}>
         <summary>
@@ -65,6 +63,7 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
   const [current, setCurrent] = useState(0);
   const latest = useRef(0);
   const placed = useRef(false);
+  const settled = useRef(false);
   const thinking = params.thinking === 'true';
   const eventId = params.event ?? '';
 
@@ -103,9 +102,18 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [last]);
 
-  // Skip the very first position unless the link pointed at something, so the header stays in view.
+  // The first placement only scrolls to a linked event (so the header stays in view otherwise);
+  // every later move scrolls its turn to the top.
   useEffect(() => {
-    if (turns.length === 0 || (current === 0 && !eventId)) return;
+    if (turns.length === 0) return;
+    const first = !settled.current;
+    settled.current = true;
+    if (first) {
+      const target = eventId ? document.getElementById(`event-${eventId}`) : null;
+      if (target) target.scrollIntoView({ block: 'center' });
+      else if (eventId) document.getElementById(`turn-${current}`)?.scrollIntoView({ block: 'start' });
+      return;
+    }
     document.getElementById(`turn-${current}`)?.scrollIntoView({ block: 'start' });
   }, [current, turns]);
 
@@ -121,7 +129,12 @@ export function ReplayView({ id, params }: { id: string; params: Params }) {
       </section>
     );
   }
-  if (!data) return <p class="muted">loading</p>;
+  if (!data)
+    return (
+      <p class="muted" role="status">
+        loading
+      </p>
+    );
 
   const { session } = data;
   const files = filesUpTo(turns, current);

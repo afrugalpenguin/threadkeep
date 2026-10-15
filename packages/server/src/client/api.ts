@@ -14,7 +14,13 @@ export class ApiError extends Error {
 async function call<T>(path: string, params: Record<string, string> = {}, init?: RequestInit): Promise<T> {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '')).toString();
   const res = await fetch(query ? `${path}?${query}` : path, init);
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
+  let body: { error?: string };
+  try {
+    body = (await res.json()) as { error?: string };
+  } catch {
+    if (res.ok) throw new ApiError(res.status, 'invalid response');
+    body = {};
+  }
   if (!res.ok) throw new ApiError(res.status, body.error ?? `request failed (${res.status})`);
   return body as T;
 }

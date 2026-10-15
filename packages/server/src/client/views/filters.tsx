@@ -2,6 +2,8 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Facets } from '@hansard/core';
 import { api } from '../api.js';
 import type { Params } from '../lib/route.js';
+import { SEARCH_SORTS, SESSION_SORTS, effectiveSort } from '../lib/sorts.js';
+import { TextFilter } from '../lib/text-filter.js';
 
 interface Props {
   params: Params;
@@ -16,15 +18,7 @@ export function Filters({ params, onChange, extra = false }: Props) {
   }, []);
 
   const set = (key: string, value: string) => onChange({ ...params, [key]: value });
-  // Text inputs commit on blur; Enter just blurs so there is one commit path.
-  const commitText = (key: string) => (e: Event) => {
-    const value = (e.currentTarget as HTMLInputElement).value.trim();
-    if (value !== (params[key] ?? '')) set(key, value);
-  };
-  const onEnter = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
-  };
-  const sorts = extra ? ['rank', 'time'] : ['time', 'project', 'source', 'length'];
+  const sorts = extra ? SEARCH_SORTS : SESSION_SORTS;
 
   return (
     <div class="filters">
@@ -52,7 +46,7 @@ export function Filters({ params, onChange, extra = false }: Props) {
       </label>
       <label>
         Project
-        <input type="text" list="project-list" value={params.project ?? ''} onBlur={commitText('project')} onKeyDown={onEnter} />
+        <TextFilter list="project-list" value={params.project ?? ''} onCommit={(v) => set('project', v)} />
         <datalist id="project-list">
           {facets?.projects.map((p) => (
             <option key={p} value={p} />
@@ -61,11 +55,11 @@ export function Filters({ params, onChange, extra = false }: Props) {
       </label>
       <label>
         Since
-        <input type="text" placeholder="7d or 2026-10-01" value={params.since ?? ''} onBlur={commitText('since')} onKeyDown={onEnter} />
+        <TextFilter placeholder="7d or 2026-10-01" value={params.since ?? ''} onCommit={(v) => set('since', v)} />
       </label>
       <label>
         Sort
-        <select value={params.sort ?? sorts[0]} onChange={(e) => set('sort', e.currentTarget.value)}>
+        <select value={effectiveSort(params.sort, sorts)} onChange={(e) => set('sort', e.currentTarget.value)}>
           {sorts.map((s) => (
             <option key={s} value={s}>
               {s}

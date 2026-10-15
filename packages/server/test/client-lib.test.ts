@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../src/client/lib/turns.js';
 import { segments } from '../src/client/lib/highlight.js';
 import { buildHash, parseHash } from '../src/client/lib/route.js';
+import { TOOL_OUTPUT_SEPARATOR as CORE_SEPARATOR } from '@hansard/core';
+import { TOOL_OUTPUT_SEPARATOR } from '../src/shared/separator.js';
+import { effectiveSort, withValidSort, SEARCH_SORTS, SESSION_SORTS } from '../src/client/lib/sorts.js';
 import { MARK_CLOSE as C, MARK_OPEN as O } from '../src/shared/marks.js';
 
 const ev = (id: string, role: string, kind = 'text', files: string[] = []) => ({ id, role, kind, files_touched: files });
@@ -98,5 +101,22 @@ describe('routes', () => {
     expect(parseHash('#/search?q=a?b&role=user')).toEqual({ view: 'search', params: { q: 'a?b', role: 'user' } });
     const route = { view: 'search', params: { q: 'what? why?' } } as const;
     expect(parseHash(buildHash(route))).toEqual(route);
+  });
+});
+
+describe('shared separator', () => {
+  it('matches the separator core uses to split tool content', () => {
+    expect(TOOL_OUTPUT_SEPARATOR).toBe(CORE_SEPARATOR);
+  });
+});
+
+describe('sort fallback', () => {
+  it('shows the first option for an unsupported sort and does not forward it', () => {
+    expect(effectiveSort('rank', SESSION_SORTS)).toBe('time');
+    expect(effectiveSort('length', SEARCH_SORTS)).toBe('rank');
+    expect(effectiveSort('project', SESSION_SORTS)).toBe('project');
+    expect(effectiveSort(undefined, SEARCH_SORTS)).toBe('rank');
+    expect(withValidSort({ sort: 'rank', source: 'x' }, SESSION_SORTS)).toEqual({ source: 'x' });
+    expect(withValidSort({ sort: 'length' }, SESSION_SORTS)).toEqual({ sort: 'length' });
   });
 });

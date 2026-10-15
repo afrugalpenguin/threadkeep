@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { SearchHit } from '@hansard/core';
 import { api, pick } from '../api.js';
-import { navigate } from '../app.js';
 import { segments } from '../lib/highlight.js';
 import type { Params } from '../lib/route.js';
+import { navigate } from '../lib/nav.js';
+import { SEARCH_SORTS, withValidSort } from '../lib/sorts.js';
+import { TextFilter } from '../lib/text-filter.js';
 import { Filters } from './filters.js';
 
 const KEYS = ['q', 'source', 'machine', 'project', 'since', 'sort', 'role', 'thinking'];
@@ -30,7 +32,7 @@ export function SearchView({ params }: { params: Params }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const latest = useRef(0);
-  const query = pick(params, KEYS);
+  const query = withValidSort(pick(params, KEYS), SEARCH_SORTS);
   const key = JSON.stringify(query);
 
   useEffect(() => {
@@ -60,15 +62,12 @@ export function SearchView({ params }: { params: Params }) {
   return (
     <section>
       <h1>Search</h1>
-      <input
-        type="search"
+      <TextFilter
         class="query"
         aria-label="Search query"
         placeholder="search conversations, press Enter"
         value={params.q ?? ''}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') navigate({ view: 'search', params: { ...params, q: e.currentTarget.value.trim() } });
-        }}
+        onCommit={(q) => navigate({ view: 'search', params: { ...params, q } })}
       />
       <Filters params={params} extra onChange={(p) => navigate({ view: 'search', params: p })} />
       {error && (
@@ -76,7 +75,11 @@ export function SearchView({ params }: { params: Params }) {
           {error}
         </p>
       )}
-      {loading && <p class="muted">searching</p>}
+      {loading && (
+        <p class="muted" role="status">
+          searching
+        </p>
+      )}
       {!loading && !error && query.q && hits.length === 0 && <p class="empty">no matches</p>}
       {group(hits).map((g) => (
         <div class="hit-group" key={g.id}>
@@ -87,7 +90,7 @@ export function SearchView({ params }: { params: Params }) {
                 <button
                   type="button"
                   class="hit"
-                  onClick={() => navigate({ view: 'session', id: hit.session_id, params: { event: hit.event_id } })}
+                  onClick={() => navigate({ view: 'session', id: hit.session_id, params: hit.kind === 'thinking' ? { event: hit.event_id, thinking: 'true' } : { event: hit.event_id } })}
                 >
                   <span class="muted">
                     {hit.role}

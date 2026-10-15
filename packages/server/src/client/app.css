@@ -244,12 +244,16 @@ mark {
   align-self: start;
   position: sticky;
   top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   min-width: 0;
 }
 
 @media (max-width: 48rem) {
   .side {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -332,6 +336,13 @@ details.tool summary {
 
 .flash {
   animation: flash 2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    outline: 2px solid var(--accent);
+  }
 }
 
 @keyframes flash {
