@@ -3,16 +3,37 @@ import { displayPath } from '@hansard/core';
 import { intFlag, parse, str } from '../args.js';
 import { ExitError, usage, type Command } from '../types.js';
 
-// rundll32 avoids cmd.exe quoting rules on Windows (`start ""` gets mangled by Node's argument quoting).
+export interface Opener {
+  command: string;
+  args: string[];
+  // Pass args to CreateProcess untouched (Windows only), because cmd.exe does its own quote parsing.
+  verbatim: boolean;
+}
+
+// Only ever a link this program built: loopback, a port, and a hex token. Checking the exact shape
+// is what makes it safe to hand the string to cmd.exe on Windows.
+const OPENABLE = /^http:\/\/127\.0\.0\.1:\d{1,5}\/#token=[0-9a-f]{32,}$/;
+
+// `start` goes through ShellExecute and hands the full URL, fragment included, to the default
+// browser. rundll32 url.dll,FileProtocolHandler was used before, but how it treats a fragment is
+// undocumented and losing `#token=` would leave the page locked. Nothing needs cmd.exe escaping
+// because OPENABLE allows no cmd metacharacter (& | ^ % " < > or spaces).
+export function openerFor(platform: NodeJS.Platform, url: string): Opener | null {
+  if (!OPENABLE.test(url)) return null;
+  if (platform === 'win32') return { command: 'cmd.exe', args: ['/d', '/s', '/c', `"start "" "${url}""`], verbatim: true };
+  return { command: platform === 'darwin' ? 'open' : 'xdg-open', args: [url], verbatim: false };
+}
+
 function openBrowser(url: string, onError: () => void): void {
-  const [cmd, args] =
-    process.platform === 'win32'
-      ? ['rundll32', ['url.dll,FileProtocolHandler', url]]
-      : process.platform === 'darwin'
-        ? ['open', [url]]
-        : ['xdg-open', [url]];
+  const opener = openerFor(process.platform, url);
+  if (!opener) return onError();
   try {
-    const child = spawn(cmd as string, args as string[], { detached: true, stdio: 'ignore', windowsHide: true });
+    const child = spawn(opener.command, opener.args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      windowsVerbatimArguments: opener.verbatim,
+    });
     child.on('error', onError);
     child.unref();
   } catch {
@@ -37,8 +58,10 @@ export const uiCommand: Command = async (args, env) => {
     }
     throw error;
   }
-  env.io.stdout.write(`listening on ${server.url}\ndatabase: ${displayPath(ctx, ctx.dbPath)}\npress ctrl+c to stop\n`);
-  if (values['open']) openBrowser(server.url, () => env.io.stderr.write('could not open a browser, visit the url above\n'));
+  env.io.stdout.write(
+    `listening on ${server.url}\nopen ${server.openUrl}\ndatabase: ${displayPath(ctx, ctx.dbPath)}\npress ctrl+c to stop\n`,
+  );
+  if (values['open']) openBrowser(server.openUrl, () => env.io.stderr.write('could not open a browser, visit the link above\n'));
   await new Promise<void>((resolve) => {
     if (env.signal?.aborted) return resolve();
     env.signal?.addEventListener('abort', () => resolve(), { once: true });

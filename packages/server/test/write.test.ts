@@ -24,8 +24,8 @@ async function setup() {
 describe('decision status writes', () => {
   it('requires the token', async () => {
     const { post } = await setup();
-    expect((await post('d1', { status: 'confirmed' })).statusCode).toBe(403);
-    expect((await post('d1', { status: 'confirmed' }, { 'x-hansard-token': 'wrong' })).statusCode).toBe(403);
+    expect((await post('d1', { status: 'confirmed' })).statusCode).toBe(401);
+    expect((await post('d1', { status: 'confirmed' }, { 'x-hansard-token': 'wrong' })).statusCode).toBe(401);
     expect((await post('d1', { status: 'confirmed' }, { 'x-hansard-token': TOKEN })).json()).toMatchObject({ id: 'd1', status: 'confirmed' });
   });
 
@@ -97,7 +97,7 @@ describe('write guard', () => {
     const { app } = await setup();
     for (const method of ['OPTIONS', 'PUT', 'DELETE'] as const) {
       const bare = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST } });
-      expect(bare.statusCode, method).toBe(403);
+      expect(bare.statusCode, method).toBe(401);
     }
     for (const method of ['PUT', 'DELETE'] as const) {
       const authed = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST, 'x-hansard-token': TOKEN } });

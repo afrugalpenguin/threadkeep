@@ -4,7 +4,7 @@ import { MARK_CLOSE, MARK_OPEN } from '../src/shared/marks.js';
 import { ingestAll } from '@hansard/core';
 import { userText } from '../../core/src/adapters/claude-code/fixtures.js';
 import { writeSession } from '../../core/test/helpers.js';
-import { HOST, S1, S2, SECRET, seededApp } from './helpers.js';
+import { AUTH, HOST, S1, S2, SECRET, seededApp } from './helpers.js';
 
 const apps: { close(): Promise<unknown> }[] = [];
 // Must run before the core helper's temp-dir cleanup (vitest runs afterEach hooks in reverse registration order) so Windows can delete the db file.
@@ -21,7 +21,7 @@ async function setup(options: { exclude?: boolean } = {}) {
     db.close();
   }
   const get = async (url: string) => {
-    const res = await s.app.inject({ url, headers: { host: HOST } });
+    const res = await s.app.inject({ url, headers: AUTH });
     return { status: res.statusCode, body: res.body, json: () => res.json() as never };
   };
   return { ...s, get };
@@ -152,7 +152,7 @@ describe('safety across every read route', () => {
 describe('error responses carry no request content', () => {
   it('answers unknown routes with a bare 404 and security headers', async () => {
     const { app } = await setup();
-    const res = await app.inject({ url: '/nope?q=mysearchtext', headers: { host: HOST } });
+    const res = await app.inject({ url: '/nope?q=mysearchtext', headers: AUTH });
     expect(res.statusCode).toBe(404);
     expect(res.json()).toEqual({ error: 'not found' });
     expect(res.body).not.toContain('mysearchtext');

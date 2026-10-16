@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
-import type { HansardContext } from '@hansard/core';
+import { UsageError, type HansardContext } from '@hansard/core';
 import { createApp } from './app.js';
 
 export { createApp, type AppOptions } from './app.js';
@@ -13,13 +13,20 @@ export interface StartOptions {
   port: number;
   log?: (line: string) => void;
   publicDir?: string;
+  // Fixed token (lowercase hex, 32 or more characters); a random one is generated per run when omitted.
+  token?: string;
 }
 
 export interface RunningServer {
+  // Bare base URL, no token.
   url: string;
+  // Base URL plus the token fragment: the link to give the user.
+  openUrl: string;
   port: number;
   close(): Promise<void>;
 }
+
+export const TOKEN_FORMAT = /^[0-9a-f]{32,}$/;
 
 export const defaultPublicDir = (): string => fileURLToPath(new URL('./public/', import.meta.url));
 
@@ -27,7 +34,11 @@ export async function startServer(ctx: HansardContext, options: StartOptions): P
   const log = options.log ?? (() => {});
   const publicDir = options.publicDir ?? defaultPublicDir();
   if (!fs.existsSync(path.join(publicDir, 'app.js'))) log('warning: client bundle missing, run pnpm build');
-  const app = createApp(ctx, { token: randomBytes(24).toString('hex'), port: options.port, publicDir, log });
+  if (options.token !== undefined && !TOKEN_FORMAT.test(options.token)) {
+    throw new UsageError('ui token must be at least 32 lowercase hex characters');
+  }
+  const token = options.token ?? randomBytes(24).toString('hex');
+  const app = createApp(ctx, { token, port: options.port, publicDir, log });
   try {
     await app.listen({ host: '127.0.0.1', port: options.port });
   } catch (error) {
@@ -36,5 +47,6 @@ export async function startServer(ctx: HansardContext, options: StartOptions): P
     throw error;
   }
   const port = (app.server.address() as AddressInfo).port;
-  return { url: `http://127.0.0.1:${port}/`, port, close: async () => void (await app.close()) };
+  const url = `http://127.0.0.1:${port}/`;
+  return { url, openUrl: `${url}#token=${token}`, port, close: async () => void (await app.close()) };
 }
