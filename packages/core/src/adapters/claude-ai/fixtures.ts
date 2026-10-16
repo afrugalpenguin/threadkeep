@@ -98,7 +98,11 @@ export function sampleConversations(secret: string): Json[] {
   const [first, second] = sampleExport() as [Json, Json];
   const messages = first['chat_messages'] as Json[];
   messages.push(message('m1-3', 'human', 3, { content: [textBlock(`For the deploy step my token is ${secret} so keep it handy`, 3)] }));
-  return [{ ...first, updated_at: ISO(messages.length) }, { ...second, name: 'Demo conversation 2' }];
+  // Distinct leading characters keep the short ids shown by the CLI apart.
+  return [
+    { ...first, uuid: 'c1111111-0000-4000-8000-000000000001', updated_at: ISO(messages.length) },
+    { ...second, uuid: 'c2222222-0000-4000-8000-000000000002', name: 'Demo conversation 2' },
+  ];
 }
 
 // Writes root/export.zip containing conversations.json, the file a claude.ai data export carries.

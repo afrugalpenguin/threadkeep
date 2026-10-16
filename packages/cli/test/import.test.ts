@@ -67,3 +67,18 @@ describe('import claude-ai', () => {
     expect(r.out).not.toContain('progress 200');
   });
 });
+
+describe('claude-ai source status', () => {
+  it('reports not found before any import, found after, and doctor stays ok', async () => {
+    const box = sandbox();
+    expect((await box.cli('sources')).out).toMatch(/^claude-ai {2}import {2}found no /m);
+    const before = await box.cli('doctor');
+    expect(before.code).toBe(0);
+    expect(before.out).toMatch(/^ok {4}source claude-ai: no exports imported yet$/m);
+    const zip = path.join(box.base, 'export.zip');
+    await writeZip(zip, { 'conversations.json': JSON.stringify(claudeAiFixtures.sampleExport()) });
+    await box.cli('import', 'claude-ai', zip);
+    expect((await box.cli('sources')).out).toMatch(/^claude-ai {2}import {2}found yes /m);
+    expect((await box.cli('doctor')).out).toMatch(/^ok {4}source claude-ai: found$/m);
+  });
+});

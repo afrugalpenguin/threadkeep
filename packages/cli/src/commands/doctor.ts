@@ -65,7 +65,9 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
   add('ok', 'machine', `${shortId(ctx.machineId)} label ${ctx.machineLabel ?? '(none)'}`);
 
   for (const source of listSources(ctx)) {
-    add(source.found ? 'ok' : 'warn', `source ${source.id}`, source.found ? 'found' : 'not found on this machine');
+    if (source.found) add('ok', `source ${source.id}`, 'found');
+    else if (source.kind === 'import') add('ok', `source ${source.id}`, 'no exports imported yet');
+    else add('warn', `source ${source.id}`, 'not found on this machine');
   }
 
   if (writable(path.dirname(ctx.hooksLogPath))) add('ok', 'hooks log', displayPath(ctx, ctx.hooksLogPath));
