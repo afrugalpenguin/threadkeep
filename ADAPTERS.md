@@ -1,6 +1,6 @@
 # Adding an adapter
 
-An adapter teaches Hansard to read one source of conversation history. Core never names a specific tool: the registry is the only place adapters are listed.
+An adapter teaches Hansard to read one source of conversation history.
 
 ## The interface
 
@@ -8,20 +8,20 @@ An adapter teaches Hansard to read one source of conversation history. Core neve
 
 - `id`: stable key. It becomes the `source` column and the `ingest_state` adapter name, so never change it.
 - `displayName`: human label.
-- `kind`: `live` reads files that change in place (appended chunks). `import` reads immutable archive files such as zips, added with `hansard import <id>`.
+- `kind`: `live` reads files that change in place (appended chunks). `import` reads immutable archive files such as zips.
 - `describe()`: what it reads, the default local location and the archive layout.
 - `discover(ctx)`: the locations to check and whether each was found. This feeds `hansard sources`.
 - `mirror(ctx, opts?)`: live only. Copies new bytes from the local source into the archive.
 - `archiveFileFor(ctx, localPath)`: live only. The archive file a local path mirrors to, or null if the adapter does not own it.
 - `archiveFiles(ctx, onWarning?)`: every archive file the adapter owns. `rebuild` replays these.
 - `skipReason(file)`: optional. A reason to skip a file (for example a sync conflict copy), or null.
-- `parse(file, chunk, ctx)`: live. Turns a chunk of lines into records, events, tool result patches and session updates.
+- `parse(file, chunk, ctx)`: required on every adapter. Live adapters turn a chunk of lines into records, events, tool result patches and session updates; import adapters stub it with an empty result.
 - `parseArchive(file, ctx)`: import only. Yields `ParseResult`s from an archive file, streaming where it can.
 - `fixtures`: a `FixtureGenerator` with `generate` (small test trees) and `sample` (the fixed demo set used by `pnpm fixtures`).
 
 ## Register it
 
-Add the adapter to the `adapters` array in `packages/core/src/adapters/registry.ts`. Live adapters also need a root in `config.json` under `sources`.
+Add the adapter to the `adapters` array in `packages/core/src/adapters/registry.ts`. A live adapter also needs a default root in `DEFAULT_CONFIG` (`packages/core/src/config.ts`); existing `config.json` files are not updated, so users add the root by hand. An import adapter currently needs its own import entry point modelled on `import-claude-ai.ts`, plus a branch for it in `packages/cli/src/commands/simple.ts`, because `hansard import` only accepts `claude-ai` today.
 
 ## State and schema
 
