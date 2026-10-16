@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { adapters } from '../packages/core/src/index.js';
 import { run } from '../packages/cli/src/run.js';
-import { assertSafeOutDir, fakeSecret, makeFixtures } from '../scripts/make-fixtures.js';
+import { assertSafeOutDir, fakeSecret, forbiddenDirs, makeFixtures } from '../scripts/make-fixtures.js';
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -87,5 +87,33 @@ describe('make-fixtures', () => {
     fs.writeFileSync(path.join(full, 'keep.txt'), 'x');
     expect(() => assertSafeOutDir(full, { repoRoot, forbidden: [] })).toThrow(/not an empty directory/);
     expect(() => assertSafeOutDir(path.join(base, 'fresh'), { repoRoot, forbidden: [] })).not.toThrow();
+  });
+});
+
+describe('guard path forms', () => {
+  it('builds the forbidden list from homes and environment redirects', () => {
+    const dirs = forbiddenDirs({ USERPROFILE: path.join(path.sep, 'u'), HOME: path.join(path.sep, 'h'), HANSARD_HOME: path.join(path.sep, 'hh'), CLAUDE_CONFIG_DIR: path.join(path.sep, 'cc') }, path.join(path.sep, 'o'));
+    expect(dirs).toEqual([
+      path.join(path.sep, 'o', '.claude'),
+      path.join(path.sep, 'o', '.hansard'),
+      path.join(path.sep, 'u', '.claude'),
+      path.join(path.sep, 'u', '.hansard'),
+      path.join(path.sep, 'h', '.claude'),
+      path.join(path.sep, 'h', '.hansard'),
+      path.join(path.sep, 'hh'),
+      path.join(path.sep, 'cc'),
+    ]);
+    expect(forbiddenDirs({}, path.join(path.sep, 'o'))).toHaveLength(2);
+  });
+
+  it.runIf(process.platform === 'win32')('treats 8.3 short and long forms of a path as the same place', () => {
+    const base = temp();
+    const short = fs.realpathSync(base); // may keep an 8.3 component such as RUSSEL~1
+    const long = fs.realpathSync.native(base);
+    for (const [forbiddenRoot, targetRoot] of [[long, short], [short, long]] as const) {
+      const fake = path.join(forbiddenRoot, 'user', '.claude');
+      fs.mkdirSync(fake, { recursive: true });
+      expect(() => assertSafeOutDir(path.join(targetRoot, 'user', '.claude', 'x'), { repoRoot, forbidden: [fake] })).toThrow(/refusing/);
+    }
   });
 });

@@ -24,7 +24,8 @@ export interface Guards {
   forbidden: string[];
 }
 
-const fold = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p);
+// Windows and macOS file systems are case-insensitive by default.
+const fold = (p: string): string => (process.platform === 'win32' || process.platform === 'darwin' ? p.toLowerCase() : p);
 
 function within(parent: string, child: string): boolean {
   const rel = path.relative(fold(path.resolve(parent)), fold(path.resolve(child)));
@@ -41,7 +42,8 @@ function realTarget(p: string): string {
     if (parent === current) break;
     current = parent;
   }
-  return path.join(fs.realpathSync(current), ...tail);
+  // The native variant also expands Windows 8.3 short names, which the JS one leaves alone.
+  return path.join(fs.realpathSync.native(current), ...tail);
 }
 
 export function assertSafeOutDir(outDir: string, guards: Guards): string {
@@ -73,6 +75,18 @@ export function makeFixtures(outDir: string, adapters: SampleAdapter[], guards: 
   });
 }
 
+// Directories fixtures must never be written into: the real data dirs under every known home,
+// plus any directory the environment redirects them to.
+export function forbiddenDirs(env: Record<string, string | undefined>, homedir: string): string[] {
+  const homes = [homedir, env['USERPROFILE'], env['HOME']].filter((h): h is string => !!h);
+  const dirs = homes.flatMap((h) => [path.join(h, '.claude'), path.join(h, '.hansard')]);
+  for (const key of ['HANSARD_HOME', 'CLAUDE_CONFIG_DIR']) {
+    const value = env[key];
+    if (value) dirs.push(value);
+  }
+  return dirs;
+}
+
 async function main(): Promise<number> {
   const [outDir, ...extra] = process.argv.slice(2);
   if (!outDir || extra.length > 0) {
@@ -87,10 +101,7 @@ async function main(): Promise<number> {
     process.stderr.write('error: packages/core is not built; run pnpm build first\n');
     return 1;
   }
-  const homes = [os.homedir(), process.env['USERPROFILE'], process.env['HOME']].filter((h): h is string => !!h);
-  const forbidden = homes.flatMap((h) => [path.join(h, '.claude'), path.join(h, '.hansard')]);
-  const hansardHome = process.env['HANSARD_HOME'];
-  if (hansardHome) forbidden.push(hansardHome);
+  const forbidden = forbiddenDirs(process.env, os.homedir());
   try {
     const written = makeFixtures(outDir, core.adapters, { repoRoot, forbidden });
     for (const { files } of written) for (const file of files) process.stdout.write(`${file}\n`);
