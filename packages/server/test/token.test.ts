@@ -56,6 +56,17 @@ describe('read token', () => {
     }
   });
 
+  it('answers 401 before any body or content-type handling', async () => {
+    const { app } = await setup();
+    const post = (headers: Record<string, string>, payload: string) =>
+      app.inject({ method: 'POST', url: '/api/decisions/d1/status', headers: { host: HOST, ...headers }, payload });
+    const badBody = await post({ 'content-type': 'application/json' }, '{"status":["x"]}');
+    expect(badBody.statusCode).toBe(401);
+    expect(badBody.json()).toEqual({ error: 'missing or invalid token' });
+    expect((await post({ 'content-type': 'text/plain' }, '{"status":"confirmed"}')).statusCode).toBe(401);
+    expect((await post({ 'content-type': 'application/x-www-form-urlencoded' }, 'status=confirmed')).statusCode).toBe(401);
+  });
+
   it('checks the host before the token', async () => {
     const { app } = await setup();
     const res = await app.inject({ url: '/api/sessions', headers: { host: 'evil.example:4477' } });
