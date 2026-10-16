@@ -1,0 +1,31 @@
+{
+  "name": "hansard",
+  "version": "0.1.0",
+  "description": "Hansard command line: ingest, search and browse AI conversation history",
+  "type": "module",
+  "license": "MIT",
+  "author": "afrugalpenguin",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "hansard": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b .",
+    "typecheck": "tsc -b ."
+  },
+  "dependencies": {
+    "@hansard/core": "workspace:*",
+    "chokidar": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/yazl": "^3.3.1",
+    "yazl": "^3.3.1"
+  }
+}
