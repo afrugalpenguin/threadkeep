@@ -16,6 +16,12 @@ describe('check-pack', () => {
     expect(evaluatePackage('p', ['README.md', 'LICENSE', 'package.json'], manifest)).toHaveLength(1);
   });
 
+  it('rejects compiled tests and build state inside dist', () => {
+    for (const stray of ['dist/a.test.js', 'dist/a.spec.js', 'dist/tsconfig.tsbuildinfo', 'dist/test/x.js', 'dist/sub/__tests__/x.js']) {
+      expect(evaluatePackage('p', [...good, stray], manifest)).toEqual([`p: test or build-state file in tarball: ${stray}`]);
+    }
+  });
+
   it('checks author, licence and emails without echoing contents', () => {
     expect(evaluateManifest('p', JSON.stringify({ author: 'someone', license: 'MIT' }))).toHaveLength(1);
     expect(evaluateManifest('p', JSON.stringify({ author: 'afrugalpenguin', license: 'ISC' }))).toHaveLength(1);

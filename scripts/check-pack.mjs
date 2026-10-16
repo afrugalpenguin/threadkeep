@@ -8,13 +8,16 @@ import { fileURLToPath } from 'node:url';
 
 const EXPECTED_AUTHOR = 'afrugalpenguin';
 const REQUIRED = ['README.md', 'LICENSE', 'package.json'];
+// Things that sit under dist/ by accident: compiled tests and incremental build state.
+const STRAY = [/\.(test|spec)\./, /\.tsbuildinfo$/, /(^|\/)(test|tests|__tests__)\//];
 const emailLike = /[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}/;
 
 // Returns a list of problems (empty when fine). Never includes file contents.
 export function evaluatePackage(name, files, manifestText) {
   const problems = [];
   for (const file of files) {
-    if (!file.startsWith('dist/') && !REQUIRED.includes(file)) problems.push(`${name}: unexpected file in tarball: ${file}`);
+    if (file.startsWith('dist/') && STRAY.some((re) => re.test(file))) problems.push(`${name}: test or build-state file in tarball: ${file}`);
+    else if (!file.startsWith('dist/') && !REQUIRED.includes(file)) problems.push(`${name}: unexpected file in tarball: ${file}`);
   }
   for (const required of REQUIRED) {
     if (!files.includes(required)) problems.push(`${name}: ${required} is missing from the tarball`);
@@ -44,7 +47,7 @@ function packFiles(dir) {
     cwd: dir,
     encoding: 'utf8',
     shell: win,
-    stdio: ['ignore', 'pipe', 'ignore'],
+    stdio: ['ignore', 'pipe', 'inherit'],
   });
   const [report] = JSON.parse(out);
   return report.files.map((f) => f.path.split(String.fromCharCode(92)).join('/'));
