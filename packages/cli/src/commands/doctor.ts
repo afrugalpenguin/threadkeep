@@ -38,6 +38,16 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
   if (writable(ctx.home)) add('ok', 'data dir', displayPath(ctx, ctx.home));
   else add('fail', 'data dir', `${displayPath(ctx, ctx.home)} is not writable`);
 
+  if (process.platform !== 'win32') {
+    try {
+      if ((fs.statSync(ctx.home).mode & 0o077) !== 0) {
+        add('warn', 'data dir permissions', `${displayPath(ctx, ctx.home)} is readable by other accounts, run: chmod 700 ${displayPath({ userHome: ctx.userHome }, ctx.home)}`);
+      }
+    } catch {
+      // The data dir check above already reports an unusable home.
+    }
+  }
+
   try {
     JSON.parse(fs.readFileSync(ctx.configPath, 'utf8'));
     add('ok', 'config', displayPath(ctx, ctx.configPath));

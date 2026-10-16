@@ -131,3 +131,16 @@ describe('watch', () => {
     expect((await box.cli('sessions')).out.trim().split('\n')).toHaveLength(1);
   }, 20_000);
 });
+
+describe.skipIf(process.platform === 'win32')('doctor home permissions (POSIX)', () => {
+  it('warns with a chmod hint when the home is group or other accessible, and is quiet when private', async () => {
+    const box = sandbox();
+    await box.cli('doctor');
+    expect((await box.cli('doctor')).out).not.toMatch(/data dir permissions/);
+    fs.chmodSync(box.home, 0o755);
+    const r = await box.cli('doctor');
+    expect(r.out).toMatch(/^warn {2}data dir permissions: .*chmod 700 /m);
+    expect(r.out).not.toContain(box.base);
+    expect(r.code).toBe(0);
+  });
+});

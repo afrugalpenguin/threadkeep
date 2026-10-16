@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { mkdirPrivate } from './paths.js';
 import { readExclusions, writeMachineArchiveFile, type HansardContext } from './config.js';
 import { applyExclusions } from './exclusions.js';
 import { TOOL_OUTPUT_SEPARATOR, splitToolContent, titleFromText } from './ids.js';
@@ -436,7 +437,7 @@ export async function ingestArchive(
 export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}): Promise<IngestResult> {
   const result = emptyResult();
   return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
-    fs.mkdirSync(ctx.archiveRoot, { recursive: true });
+    mkdirPrivate(ctx.archiveRoot);
     writeMachineArchiveFile(ctx);
     for (const adapter of adapters) {
       if (adapter.kind === 'live' && adapter.mirror) addMirror(result, adapter.mirror(ctx));
@@ -459,7 +460,7 @@ export async function ingestFile(ctx: HansardContext, localPath: string, options
   const file = owner.archiveFileFor(ctx, localPath) as ArchiveFile;
   const result = emptyResult();
   return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
-    fs.mkdirSync(ctx.archiveRoot, { recursive: true });
+    mkdirPrivate(ctx.archiveRoot);
     writeMachineArchiveFile(ctx);
     addMirror(result, (owner.mirror as NonNullable<SourceAdapter['mirror']>)(ctx, { file: localPath }));
     const db = openDb(ctx.dbPath);

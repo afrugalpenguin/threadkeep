@@ -4,7 +4,7 @@ import path from 'node:path';
 import { writeMachineArchiveFile, type HansardContext } from './config.js';
 import { ingestArchive, type IngestResult } from './ingest.js';
 import { withLock } from './lock.js';
-import { relativeWithin } from './paths.js';
+import { mkdirPrivate, relativeWithin } from './paths.js';
 import { claudeAiAdapter, archiveDir } from './adapters/claude-ai/index.js';
 import { CONVERSATIONS_ENTRY, zipEntryNames } from './adapters/claude-ai/zip.js';
 import { openDb } from './store/db.js';
@@ -170,7 +170,7 @@ export async function importClaudeAi(
   const { found } = resolveInputs(inputs, report);
 
   return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => report.warnings.push(w) }, async () => {
-    fs.mkdirSync(archiveDir(ctx), { recursive: true });
+    mkdirPrivate(archiveDir(ctx));
     writeMachineArchiveFile(ctx);
     const db = openDb(ctx.dbPath);
     let done = 0;

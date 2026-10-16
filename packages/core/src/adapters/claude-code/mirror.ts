@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { HansardContext } from '../../config.js';
-import { toPosix } from '../../paths.js';
+import { PRIVATE_FILE_MODE, mkdirPrivate, toPosix } from '../../paths.js';
 import type { MirrorReport } from '../types.js';
 
 export const SESSION_FILE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jsonl$/i;
@@ -96,8 +96,8 @@ export function mirrorOne(ctx: HansardContext, adapterId: string, session: Local
     const lastNewline = tail.lastIndexOf(0x0a);
     if (lastNewline < 0) return; // never copy a partial trailing line
     const data = tail.subarray(0, lastNewline + 1);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    const out = fs.openSync(abs, 'a');
+    mkdirPrivate(path.dirname(abs));
+    const out = fs.openSync(abs, 'a', PRIVATE_FILE_MODE);
     try {
       fs.writeSync(out, data);
       fs.fsyncSync(out);
