@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from '../src/run.js';
 import { openerFor } from '../src/commands/ui.js';
@@ -32,6 +34,15 @@ async function start(box: Sandbox) {
 
 const withToken = (token: string) => ({ headers: { 'x-hansard-token': token } });
 
+function setUiToken(box: Sandbox, value: unknown): void {
+  fs.mkdirSync(box.home, { recursive: true });
+  const file = path.join(box.home, 'config.json');
+  const config = fs.existsSync(file)
+    ? JSON.parse(fs.readFileSync(file, 'utf8'))
+    : { dbPath: '<home>/history.db', archiveRoot: '<home>/archive', sources: { 'claude-code': { root: '~/.claude/projects' } } };
+  fs.writeFileSync(file, JSON.stringify({ ...config, ui: { token: value } }));
+}
+
 describe('ui', () => {
   it('prints the tokenised link, gates the api on it, and keeps paths and queries out of output', async () => {
     const box = sandbox();
@@ -52,6 +63,27 @@ describe('ui', () => {
     expect(ui.err()).not.toContain(ui.token);
     expect(ui.out() + ui.err()).not.toContain(box.base);
     expect(ui.out() + ui.err()).not.toContain('zzsecretqueryzz');
+  });
+
+  it('uses a fixed token from config.json', async () => {
+    const box = sandbox();
+    const fixed = 'c'.repeat(40);
+    setUiToken(box, fixed);
+    const ui = await start(box);
+    expect(ui.token).toBe(fixed);
+    expect((await fetch(`${ui.url}api/sessions`, withToken(fixed))).status).toBe(200);
+    expect(await ui.stop()).toBe(0);
+  });
+
+  it('rejects an invalid config token without echoing it', async () => {
+    const box = sandbox();
+    for (const bad of ['Not-Hex-Secret-0123456789abcdef0123456789', 'abc', 123]) {
+      setUiToken(box, bad);
+      const r = await box.cli('ui', '--port', '0');
+      expect(r.code, String(bad)).not.toBe(0);
+      expect(r.err).toContain('ui.token');
+      expect(r.out + r.err).not.toContain(String(bad));
+    }
   });
 
   it('rejects bad ports and positionals', async () => {
@@ -77,5 +109,21 @@ describe('browser opener', () => {
     for (const bad of ['http://evil.example/', `${url}&calc`, `${url}"`, 'http://127.0.0.1:4477/#token=%PATH%', 'file:///c:/x']) {
       expect(openerFor('win32', bad), bad).toBeNull();
     }
+  });
+});
+
+describe('doctor ui token', () => {
+  it('reports per run by default, fixed when configured, and fails on an invalid value', async () => {
+    const box = sandbox();
+    expect((await box.cli('doctor')).out).toMatch(/^ok {4}ui token: per run$/m);
+    setUiToken(box, 'd'.repeat(40));
+    const fixed = await box.cli('doctor');
+    expect(fixed.out).toMatch(/^ok {4}ui token: fixed \(config\)$/m);
+    expect(fixed.out).not.toContain('d'.repeat(40));
+    setUiToken(box, 'nope-secret-value');
+    const bad = await box.cli('doctor');
+    expect(bad.code).toBe(1);
+    expect(bad.out).toMatch(/^fail {2}ui token:.*ui\.token/m);
+    expect(bad.out).not.toContain('nope-secret-value');
   });
 });

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { displayPath } from '@hansard/core';
 import { intFlag, parse, str } from '../args.js';
 import { ExitError, usage, type Command } from '../types.js';
+import { UI_TOKEN_PROBLEM, readUiToken } from '../ui-token.js';
 
 export interface Opener {
   command: string;
@@ -47,11 +48,17 @@ export const uiCommand: Command = async (args, env) => {
   const port = intFlag(values['port'], 'port', 4477);
   if (port > 65535) throw usage('--port must be at most 65535');
   const ctx = env.context(str(values['home']));
+  let token: string | null;
+  try {
+    token = readUiToken(ctx);
+  } catch {
+    throw new ExitError(UI_TOKEN_PROBLEM, 1);
+  }
   // Lazy so that other commands never load the web server.
   const { startServer } = await import('@hansard/server');
   let server;
   try {
-    server = await startServer(ctx, { port, log: (line) => env.io.stderr.write(`${line}\n`) });
+    server = await startServer(ctx, { port, ...(token ? { token } : {}), log: (line) => env.io.stderr.write(`${line}\n`) });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') {
       throw new ExitError(`port ${port} is in use, pick another with --port`, 1);

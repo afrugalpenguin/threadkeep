@@ -4,6 +4,7 @@ import { displayPath, listSources, machineSummary, openDb, schemaVersion, type H
 import { parse, str } from '../args.js';
 import { shortId } from '../format.js';
 import { usage, type Command } from '../types.js';
+import { UI_TOKEN_PROBLEM, readUiToken } from '../ui-token.js';
 
 type Level = 'ok' | 'warn' | 'fail';
 interface Check {
@@ -42,6 +43,12 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
     add('ok', 'config', displayPath(ctx, ctx.configPath));
   } catch {
     add('fail', 'config', 'config.json is missing or not valid JSON');
+  }
+
+  try {
+    add('ok', 'ui token', readUiToken(ctx) ? 'fixed (config)' : 'per run');
+  } catch {
+    add('fail', 'ui token', UI_TOKEN_PROBLEM);
   }
 
   try {
