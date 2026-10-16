@@ -86,6 +86,18 @@ describe('ui', () => {
     }
   });
 
+  it('rejects a config ui value that is not an object without echoing it', async () => {
+    const box = sandbox();
+    fs.mkdirSync(box.home, { recursive: true });
+    for (const bad of ['topsecretvalue', ['topsecretvalue'], null]) {
+      fs.writeFileSync(path.join(box.home, 'config.json'), JSON.stringify({ dbPath: '<home>/history.db', archiveRoot: '<home>/archive', sources: {}, ui: bad }));
+      const r = await box.cli('ui', '--port', '0');
+      expect(r.code, JSON.stringify(bad)).toBe(1);
+      expect(r.err).toContain('ui.token');
+      expect(r.out + r.err).not.toContain('topsecretvalue');
+    }
+  });
+
   it('rejects bad ports and positionals', async () => {
     const box = sandbox();
     expect((await box.cli('ui', '--port', '70000')).code).toBe(2);
@@ -98,7 +110,7 @@ describe('browser opener', () => {
 
   it('keeps the whole url, fragment included, on every platform', () => {
     const win = openerFor('win32', url);
-    expect(win?.command).toBe('cmd.exe');
+    expect(win?.command).toMatch(/System32\\cmd\.exe$/);
     expect(win?.args.join(' ')).toContain(`"${url}"`);
     expect(win?.verbatim).toBe(true);
     expect(openerFor('darwin', url)).toMatchObject({ command: 'open', args: [url] });

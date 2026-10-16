@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AddressInfo } from 'node:net';
 import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from '@hansard/core';
@@ -50,11 +50,11 @@ export const indexHtml = (): string =>
 
 export const routeOf = (request: FastifyRequest): string => request.routeOptions.url ?? 'unmatched';
 
+// Compares fixed-length digests so neither content nor length of the token leaks through timing.
 export function tokenMatches(expected: string, given: unknown): boolean {
   if (typeof given !== 'string') return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(given);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const digest = (value: string): Buffer => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(expected), digest(given));
 }
 
 function securityHeaders(reply: FastifyReply): void {

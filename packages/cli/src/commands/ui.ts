@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { displayPath } from '@hansard/core';
 import { intFlag, parse, str } from '../args.js';
 import { ExitError, usage, type Command } from '../types.js';
@@ -19,9 +20,12 @@ const OPENABLE = /^http:\/\/127\.0\.0\.1:\d{1,5}\/#token=[0-9a-f]{32,}$/;
 // browser. rundll32 url.dll,FileProtocolHandler was used before, but how it treats a fragment is
 // undocumented and losing `#token=` would leave the page locked. Nothing needs cmd.exe escaping
 // because OPENABLE allows no cmd metacharacter (& | ^ % " < > or spaces).
+// Full path so a planted cmd.exe in the current directory or PATH is never picked up.
+const cmdPath = (): string => path.win32.join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'cmd.exe');
+
 export function openerFor(platform: NodeJS.Platform, url: string): Opener | null {
   if (!OPENABLE.test(url)) return null;
-  if (platform === 'win32') return { command: 'cmd.exe', args: ['/d', '/s', '/c', `"start "" "${url}""`], verbatim: true };
+  if (platform === 'win32') return { command: cmdPath(), args: ['/d', '/s', '/c', `"start "" "${url}""`], verbatim: true };
   return { command: platform === 'darwin' ? 'open' : 'xdg-open', args: [url], verbatim: false };
 }
 

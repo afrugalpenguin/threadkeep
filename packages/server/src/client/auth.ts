@@ -34,7 +34,7 @@ export function clearToken(): void {
 }
 
 // Called before the first render and on every hash change: moves a token from the address bar
-// into storage and rewrites the URL so it does not stay in the bar or in history.
+// into storage and rewrites the URL so it does not stay in the address bar and session history.
 export function captureTokenFromLocation(): boolean {
   const taken = takeTokenFromHash(location.hash);
   if (!taken) return false;

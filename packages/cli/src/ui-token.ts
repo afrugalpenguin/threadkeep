@@ -15,7 +15,8 @@ export function readUiToken(ctx: HansardContext): string | null {
     return null; // an unreadable config is already reported by loading the context and by doctor
   }
   const ui = (config as { ui?: unknown } | null)?.ui;
-  if (ui === undefined || ui === null) return null;
+  if (ui === undefined) return null;
+  if (typeof ui !== 'object' || ui === null || Array.isArray(ui)) throw new Error(UI_TOKEN_PROBLEM);
   const token = (ui as { token?: unknown }).token;
   if (token === undefined) return null;
   if (typeof token !== 'string' || !FORMAT.test(token)) throw new Error(UI_TOKEN_PROBLEM);

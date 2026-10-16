@@ -30,7 +30,7 @@ export function App() {
   if (locked) {
     return (
       <main class="locked">
-        <p>Open the link printed in your terminal by `hansard ui`, or run `hansard ui --open`.</p>
+        <p>Open the link printed in your terminal by hansard ui, or run hansard ui --open.</p>
       </main>
     );
   }

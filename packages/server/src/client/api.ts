@@ -13,11 +13,13 @@ export class ApiError extends Error {
 
 async function call<T>(path: string, params: Record<string, string> = {}, init?: RequestInit): Promise<T> {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '')).toString();
+  const sent = currentToken();
   const res = await fetch(query ? `${path}?${query}` : path, {
     ...init,
-    headers: { ...(init?.headers as Record<string, string> | undefined), 'x-hansard-token': currentToken() },
+    headers: { ...(init?.headers as Record<string, string> | undefined), 'x-hansard-token': sent },
   });
-  if (res.status === 401) clearToken();
+  // Another tab may have stored a newer token meanwhile; only drop the one this request used.
+  if (res.status === 401 && currentToken() === sent) clearToken();
   let body: { error?: string };
   try {
     body = (await res.json()) as { error?: string };
