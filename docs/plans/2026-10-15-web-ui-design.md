@@ -14,7 +14,7 @@ A local, read-mostly web UI over the Hansard store: a session list, search with 
 
 - Binds `127.0.0.1` only. There is no option to bind wider.
 - Rejects any request whose `Host` header is not `127.0.0.1:<port>` or `localhost:<port>`, which blocks DNS rebinding.
-- Generates a random token per run and embeds it in the page. The only write route requires it in an `x-hansard-token` header, so a cross-site form post cannot change decisions.
+- Generates a random token per run (or uses the optional fixed `ui.token` from `config.json`). Every `/api/*` request, reads and `HEAD` included, requires it in an `x-hansard-token` header and gets 401 otherwise, so other accounts on the machine cannot read history through loopback and a cross-site form post cannot change decisions. The page shell and its static assets are the only open routes and hold no data. The token is not in the page: `hansard ui` prints `http://127.0.0.1:<port>/#token=<token>`, the client moves the fragment into `localStorage` and rewrites the URL, and a missing or rejected token shows a message asking for the printed link.
 - Sends no CORS headers.
 - All reads go through core query functions, so redaction and exclusions are enforced in one place. The server never builds SQL.
 - Request logs record method, route and status only, never query text. Startup prints the URL and the data home in display form.
@@ -58,7 +58,7 @@ Hash routing: `#/sessions`, `#/search?q=...`, `#/session/<id>?event=<id>`, `#/de
 All tests use synthetic fixtures in a temp dir per test.
 
 - Core: decision listing and transitions, session offset, facets, exclusion coverage.
-- Server via `fastify.inject()`: redacted content only (a planted secret never appears in any response), excluded sessions never appear through any route, foreign `Host` gets 403, missing or wrong token gets 403, error mapping, 500 bodies say `internal error` only, logs never contain query text.
+- Server via `fastify.inject()`: redacted content only (a planted secret never appears in any response), excluded sessions never appear through any route, foreign `Host` gets 403 before the token is checked, missing or wrong token gets 401 on every api route and method, error mapping, 500 bodies say `internal error` only, logs never contain query text.
 - Client logic in plain modules with unit tests: turn grouping, files touched up to a turn, snippet highlight segments, URL to filter state.
 
 ## Packaging
@@ -74,7 +74,9 @@ Where the build differs from the plan above, and why:
 - Core rejects a `limit` or `offset` that is not a non-negative integer with `UsageError`, so no caller can reach SQLite with `-1` (unlimited) or a fraction. Decision writes take the write lock up front and check that exactly one row changed.
 - Every response carries the security headers, including malformed URLs (`frameworkErrors`) and unknown routes (a custom 404 that does not echo the URL). Body validation rejects unknown fields and array-wrapped values, and `text/plain` posts get 415.
 - Error bodies never echo request input. `UsageError` messages are fixed guidance text (for example an invalid `since` value reports how to write one, not the value given), validation failures return `invalid request`, and other client errors return `bad request`.
-- `createApp` refuses a token that is not lowercase hex, since it is embedded in the page unescaped.
+- `createApp` and `startServer` refuse a token that is not at least 32 lowercase hex characters, without echoing it. Token checks run on the raw request path against an allowlist of open routes (`/`, `/app.js`, `/app.css`), so unknown paths and encoded variants of `/api` also need the token; non-read methods outside `/api` answer 403.
+- On Windows `--open` uses `cmd.exe /c start` with verbatim arguments rather than `rundll32`, because how rundll32 treats a URL fragment is undocumented and the token travels in the fragment. The link must match the exact loopback-plus-hex shape before it is passed to cmd.exe.
+- `hansard doctor` reports `ui token: per run` or `ui token: fixed (config)`, and fails with a message naming `ui.token` when the configured value is invalid.
 - Claude Code lines that the human did not type (`isMeta`, compaction summaries, local command and bash output, task notifications, interrupt notices, IDE context, hook output and system reminders) are stored with role `system`, so they no longer start replay turns, become titles or match `--role user`. Replay shows them collapsed. Rows ingested before this change keep role `user` until `hansard rebuild` is run. After upgrading, run `hansard rebuild` once so sessions ingested earlier pick up the system role.
 - The replay links search hits on thinking events with thinking shown, and filter text boxes keep a local draft so a re-render cannot discard typing.
 
