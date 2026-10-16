@@ -14,7 +14,8 @@
     "test": "vitest run",
     "typecheck": "tsc -b packages/core packages/cli packages/server && tsc --noEmit -p packages/server/tsconfig.client.json && tsc --noEmit -p tsconfig.json",
     "hygiene": "node scripts/check-hygiene.mjs --tracked",
-    "hygiene:history": "node scripts/check-hygiene.mjs --history"
+    "hygiene:history": "node scripts/check-hygiene.mjs --history",
+    "fixtures": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/make-fixtures.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
