@@ -1,0 +1,36 @@
+{
+  "name": "@hansard/server",
+  "version": "0.1.0",
+  "description": "Hansard local web UI: browse, search and replay AI conversation history",
+  "type": "module",
+  "license": "MIT",
+  "author": "afrugalpenguin",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b . && node scripts/build-client.mjs",
+    "typecheck": "tsc -b . && tsc -p tsconfig.client.json"
+  },
+  "dependencies": {
+    "@hansard/core": "workspace:*",
+    "fastify": "^5.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "preact": "^10.26.9"
+  }
+}

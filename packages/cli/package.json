@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@hansard/core": "workspace:*",
+    "@hansard/server": "workspace:*",
     "chokidar": "^4.0.3"
   },
   "devDependencies": {

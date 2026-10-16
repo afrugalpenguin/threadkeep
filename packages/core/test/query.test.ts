@@ -6,6 +6,7 @@ import {
   changeExclusion,
   getSession,
   ingestAll,
+  listFacets,
   listSessions,
   machineSummary,
   matchesGlob,
@@ -80,6 +81,16 @@ describe('search', () => {
     });
   });
 
+  it('uses custom snippet markers when given', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const [hit] = search(db, { query: 'caching', role: 'user', marks: ['\u0002', '\u0003'] });
+      expect(hit?.snippet).toContain('\u0002caching\u0003');
+      expect(hit?.snippet).not.toContain('[caching]');
+      expect(search(db, { query: 'caching', role: 'user' })[0]?.snippet).toContain('[caching]');
+    });
+  });
+
   it('survives quotes and fts syntax in the query', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {
@@ -97,6 +108,7 @@ describe('search', () => {
     expect(parseSince('2w', now)).toBe('2026-02-24T12:00:00.000Z');
     expect(parseSince('2026-01-05')).toBe('2026-01-05');
     expect(() => parseSince('yesterday')).toThrow(UsageError);
+    expect(() => parseSince('yesterday')).toThrow(/^invalid since value: use a duration like 7d or a date like 2026-10-01$/);
   });
 });
 
@@ -116,6 +128,29 @@ describe('sessions and show', () => {
     });
   });
 
+  it('pages with offset in a stable order', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const all = listSessions(db, { sort: 'time' }).map((s) => s.id);
+      expect(all).toHaveLength(3);
+      expect(listSessions(db, { sort: 'time', limit: 2 }).map((s) => s.id)).toEqual(all.slice(0, 2));
+      expect(listSessions(db, { sort: 'time', limit: 2, offset: 2 }).map((s) => s.id)).toEqual(all.slice(2));
+      expect(listSessions(db, { sort: 'time', offset: 3 })).toEqual([]);
+    });
+  });
+
+  it('rejects negative and fractional paging values', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      for (const bad of [-1, 1.5, Number.NaN]) {
+        expect(() => listSessions(db, { limit: bad })).toThrow(UsageError);
+        expect(() => listSessions(db, { offset: bad })).toThrow(UsageError);
+        expect(() => search(db, { query: 'caching', limit: bad })).toThrow(UsageError);
+      }
+      expect(listSessions(db, { limit: 0 })).toEqual([]);
+    });
+  });
+
   it('shows by prefix, hides thinking and tool output unless asked, and rejects ambiguity', async () => {
     const m = await seeded();
     await withDb(m.ctx, (db) => {
@@ -130,6 +165,22 @@ describe('sessions and show', () => {
       expect(() => getSession(db, 'aaaaaaaa')).toThrow(/ambiguous.*2 sessions/);
       expect(() => getSession(db, 'zzzz')).toThrow(NotFoundError);
       expect(() => getSession(db, "a'; drop")).toThrow(NotFoundError);
+    });
+  });
+});
+
+describe('listFacets', () => {
+  it('lists sources, projects and machines with sessions, skipping excluded ones', async () => {
+    const m = await seeded();
+    await withDb(m.ctx, (db) => {
+      const f = listFacets(m.ctx, db);
+      expect(f.sources).toEqual(['claude-code']);
+      expect(f.projects).toContain('/home/alice/projects/other');
+      expect(f.machines.map((x) => x.id)).toEqual([m.ctx.machineId]);
+      applyExclusions(db, { projectGlobs: ['**/projects/other'], sessionIds: [] });
+      expect(listFacets(m.ctx, db).projects).not.toContain('/home/alice/projects/other');
+      applyExclusions(db, { projectGlobs: [], sessionIds: [S1, S2, S3] });
+      expect(listFacets(m.ctx, db)).toMatchObject({ sources: [], projects: [], machines: [] });
     });
   });
 });

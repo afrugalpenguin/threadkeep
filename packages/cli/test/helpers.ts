@@ -49,3 +49,12 @@ export function seed(box: Sandbox, sessions = 2): string[] {
   if (!adapter) throw new Error('claude-code adapter missing');
   return adapter.fixtures.generate({ root: box.claudeRoot, sessions }).sessionIds;
 }
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export async function waitFor(check: () => boolean, ms = 8000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!check()) {
+    if (Date.now() > end) throw new Error('timed out waiting');
+    await sleep(50);
+  }
+}
