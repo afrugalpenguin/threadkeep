@@ -81,6 +81,7 @@ See [ADAPTERS.md](ADAPTERS.md).
 pnpm test         # unit and integration tests
 pnpm typecheck
 pnpm hygiene      # personal data scan of tracked files
+pnpm pack:check   # npm tarball contents, after pnpm build
 pnpm fixtures <dir>   # synthetic demo data, after pnpm build; dir must be empty and outside the repo
 ```
 
