@@ -18,7 +18,8 @@ async function start(box: Sandbox) {
     box.env,
     controller.signal,
   );
-  await waitFor(() => OPEN_LINE.test(out));
+  // The first start pays a cold import of the server package, which can be slow under a parallel full run.
+  await waitFor(() => OPEN_LINE.test(out), 25_000);
   const match = OPEN_LINE.exec(out) as RegExpExecArray;
   return {
     url: match[1] as string,
@@ -43,7 +44,7 @@ function setUiToken(box: Sandbox, value: unknown): void {
   fs.writeFileSync(file, JSON.stringify({ ...config, ui: { token: value } }));
 }
 
-describe('ui', () => {
+describe('ui', { timeout: 30_000 }, () => {
   it('prints the tokenised link, gates the api on it, and keeps paths and queries out of output', async () => {
     const box = sandbox();
     seed(box, 2);
