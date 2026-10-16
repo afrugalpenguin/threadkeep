@@ -2,16 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run } from '../src/run.js';
-import { sandbox, seed } from './helpers.js';
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-async function waitFor(check: () => boolean, ms = 8000): Promise<void> {
-  const end = Date.now() + ms;
-  while (!check()) {
-    if (Date.now() > end) throw new Error('timed out waiting');
-    await sleep(50);
-  }
-}
+import { sandbox, seed, sleep, waitFor } from './helpers.js';
 
 describe('rebuild', () => {
   it('rebuilds from the archive only, without touching sources', async () => {

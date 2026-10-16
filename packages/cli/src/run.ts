@@ -26,6 +26,7 @@ commands:
   machine             show | set-label <label>
   doctor              check the setup
   watch               ingest on change
+  ui                  serve the local web ui (--port, --open)
   import claude-ai <path...>  import claude.ai export zips, a directory or a manifest
 
 every command accepts --home <dir> (default: HANSARD_HOME, else ~/.hansard)

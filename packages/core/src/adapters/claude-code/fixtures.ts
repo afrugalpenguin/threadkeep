@@ -33,6 +33,10 @@ export const line = (value: unknown): string => `${JSON.stringify(value)}\n`;
 export const userText = (b: LineBase, content: string | unknown[]) =>
   line({ ...base(b), type: 'user', message: { role: 'user', content } });
 
+// A user line that Claude Code generated itself: pass { isMeta: true } or { isCompactSummary: true }.
+export const flaggedUserText = (b: LineBase, content: string | unknown[], flags: Record<string, unknown>) =>
+  line({ ...base(b), type: 'user', message: { role: 'user', content }, ...flags });
+
 export const assistant = (b: LineBase, content: unknown[]) =>
   line({ ...base(b), type: 'assistant', message: { role: 'assistant', content } });
 
