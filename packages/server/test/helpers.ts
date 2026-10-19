@@ -8,6 +8,7 @@ export const S2 = 'eeeeeeee-2222-4222-8222-222222222222';
 export const TOKEN = 'a'.repeat(48);
 export const PORT = 4477;
 export const HOST = `127.0.0.1:${PORT}`;
+export const AUTH = { host: HOST, 'x-hansard-token': TOKEN };
 
 // Assembled at runtime so no scanner sees a literal token in this file.
 export const SECRET = ['AKIA', 'A1'.repeat(8)].join('');

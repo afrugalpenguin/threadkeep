@@ -1,6 +1,6 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
+import { mkdirPrivate } from '../paths.js';
 import { migrations } from './migrations/index.js';
 
 export type Db = Database.Database;
@@ -12,7 +12,7 @@ export function schemaVersion(db: Db): number {
 }
 
 export function openDb(file: string): Db {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  mkdirPrivate(path.dirname(file));
   const db = new Database(file);
   db.pragma('journal_mode = WAL');
   db.pragma('busy_timeout = 5000');

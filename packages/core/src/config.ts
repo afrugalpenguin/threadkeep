@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { expandHome, relativeWithin, toPosix } from './paths.js';
+import { PRIVATE_FILE_MODE, expandHome, mkdirPrivate, relativeWithin, toPosix } from './paths.js';
 
 export interface SourceConfig {
   root: string;
@@ -72,7 +72,7 @@ export function displayPath(ctx: PathRoots, abs: string): string {
 
 function writeJsonIfMissing(file: string, value: unknown): boolean {
   if (fs.existsSync(file)) return false;
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx', ...(PRIVATE_FILE_MODE === undefined ? {} : { mode: PRIVATE_FILE_MODE }) });
   return true;
 }
 
@@ -88,7 +88,7 @@ export function loadContext(options: LoadContextOptions = {}): HansardContext {
   const env = options.env ?? process.env;
   const userHome = options.userHome ?? os.homedir();
   const home = path.resolve(options.home ?? env['HANSARD_HOME'] ?? path.join(userHome, '.hansard'));
-  fs.mkdirSync(home, { recursive: true });
+  mkdirPrivate(home);
 
   const configPath = path.join(home, 'config.json');
   const exclusionsPath = path.join(home, 'exclusions.json');
@@ -152,7 +152,7 @@ export function setMachineLabel(ctx: HansardContext, label: string | null): void
 // Lets other machines sharing the archive show this machine's label.
 export function writeMachineArchiveFile(ctx: HansardContext): void {
   const dir = path.join(ctx.archiveRoot, 'machines');
-  fs.mkdirSync(dir, { recursive: true });
+  mkdirPrivate(dir);
   fs.writeFileSync(
     path.join(dir, `${ctx.machineId}.json`),
     `${JSON.stringify({ id: ctx.machineId, label: ctx.machineLabel }, null, 2)}\n`,

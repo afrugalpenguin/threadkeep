@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../src/client/lib/turns.js';
 import { segments } from '../src/client/lib/highlight.js';
 import { buildHash, parseHash } from '../src/client/lib/route.js';
+import { takeTokenFromHash } from '../src/client/lib/token.js';
 import { TOOL_OUTPUT_SEPARATOR as CORE_SEPARATOR } from '@hansard/core';
 import { TOOL_OUTPUT_SEPARATOR } from '../src/shared/separator.js';
 import { effectiveSort, withValidSort, SEARCH_SORTS, SESSION_SORTS } from '../src/client/lib/sorts.js';
@@ -118,5 +119,27 @@ describe('sort fallback', () => {
     expect(effectiveSort(undefined, SEARCH_SORTS)).toBe('rank');
     expect(withValidSort({ sort: 'rank', source: 'x' }, SESSION_SORTS)).toEqual({ source: 'x' });
     expect(withValidSort({ sort: 'length' }, SESSION_SORTS)).toEqual({ sort: 'length' });
+  });
+});
+
+describe('takeTokenFromHash', () => {
+  const hex = 'ab12'.repeat(12);
+  it('extracts the token and lands on the sessions list by default', () => {
+    expect(takeTokenFromHash(`#token=${hex}`)).toEqual({ token: hex, rest: '#/sessions' });
+  });
+
+  it('keeps an optional route after an ampersand', () => {
+    expect(takeTokenFromHash(`#token=${hex}&/session/abc`)).toEqual({ token: hex, rest: '#/session/abc' });
+    expect(takeTokenFromHash(`#token=${hex}&x=1`)).toEqual({ token: hex, rest: '#/sessions' });
+  });
+
+  it('returns null for anything that is not a well-formed token fragment', () => {
+    for (const hash of ['#token=', '#/sessions', '', '#', '#token', '#token=XYZ', '#token=abc def', '#/token=abc', 'token=abc']) {
+      expect(takeTokenFromHash(hash), hash).toBeNull();
+    }
+  });
+
+  it('does not collide with route parsing', () => {
+    expect(parseHash(`#token=${hex}`)).toEqual({ view: 'sessions', params: {} });
   });
 });

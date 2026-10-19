@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { captureTokenFromLocation, currentToken, onTokenCleared } from './auth.js';
 import { buildHash, parseHash, type Route } from './lib/route.js';
 import { SessionsView } from './views/sessions.js';
 import { SearchView } from './views/search.js';
@@ -13,11 +14,26 @@ const links: { view: 'sessions' | 'search' | 'decisions'; label: string }[] = [
 
 export function App() {
   const [route, setRoute] = useState<Route>(() => parseHash(location.hash));
+  const [locked, setLocked] = useState<boolean>(() => currentToken() === '');
   useEffect(() => {
-    const onChange = () => setRoute(parseHash(location.hash));
+    const onChange = () => {
+      if (captureTokenFromLocation()) setLocked(false);
+      setRoute(parseHash(location.hash));
+    };
     window.addEventListener('hashchange', onChange);
-    return () => window.removeEventListener('hashchange', onChange);
+    const stop = onTokenCleared(() => setLocked(true));
+    return () => {
+      window.removeEventListener('hashchange', onChange);
+      stop();
+    };
   }, []);
+  if (locked) {
+    return (
+      <main class="locked">
+        <p>Open the link printed in your terminal by hansard ui, or run hansard ui --open.</p>
+      </main>
+    );
+  }
   const active = route.view === 'session' ? 'sessions' : route.view;
   return (
     <div class="shell">

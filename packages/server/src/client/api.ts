@@ -1,6 +1,6 @@
 import type { DecisionRow, Facets, SearchHit, SessionRow, ShownSession } from '@hansard/core';
 
-const token = document.querySelector('meta[name="hansard-token"]')?.getAttribute('content') ?? '';
+import { clearToken, currentToken } from './auth.js';
 
 export class ApiError extends Error {
   constructor(
@@ -13,7 +13,13 @@ export class ApiError extends Error {
 
 async function call<T>(path: string, params: Record<string, string> = {}, init?: RequestInit): Promise<T> {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '')).toString();
-  const res = await fetch(query ? `${path}?${query}` : path, init);
+  const sent = currentToken();
+  const res = await fetch(query ? `${path}?${query}` : path, {
+    ...init,
+    headers: { ...(init?.headers as Record<string, string> | undefined), 'x-hansard-token': sent },
+  });
+  // Another tab may have stored a newer token meanwhile; only drop the one this request used.
+  if (res.status === 401 && currentToken() === sent) clearToken();
   let body: { error?: string };
   try {
     body = (await res.json()) as { error?: string };
@@ -37,7 +43,7 @@ export const api = {
       {},
       {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-hansard-token': token },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status }),
       },
     ),

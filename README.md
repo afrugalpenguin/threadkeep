@@ -23,7 +23,7 @@ To get a `hansard` command, run `pnpm link --global` inside `packages/cli`, or c
 | `hansard sessions` | list sessions (`--source`, `--project`, `--since`, `--machine`, `--sort`, `--limit`, `--json`) |
 | `hansard search <query...>` | full text search (`--source`, `--project`, `--since`, `--role`, `--machine`, `--sort`, `--thinking`, `--limit`, `--json`) |
 | `hansard show <session_id>` | print a session (`--expand-tools`, `--thinking`, `--json`) |
-| `hansard ui` | serve the local web UI (`--port`, `--open`) |
+| `hansard ui` | serve the local web UI and print its tokenised link (`--port`, `--open`) |
 | `hansard exclusions list\|add\|remove` | manage exclusions (`--project <glob>` or `--session <id>`) |
 | `hansard sources` | list adapters and whether their location was found (`--json`) |
 | `hansard rebuild` | rebuild the database from the archive (`--wait <ms>`) |
@@ -54,7 +54,7 @@ $ hansard search deploy
 ## Privacy
 
 - **Local only.** Everything stays on your machine. There is no account, no server and no sync service.
-- **No telemetry and no network calls.** Hansard never contacts the internet. `hansard ui` listens on 127.0.0.1 only, refuses requests with a foreign Host header, and requires a random per-run token for changes. Any program running as you on this machine can read it while it runs.
+- **No telemetry and no network calls.** Hansard never contacts the internet. `hansard ui` listens on 127.0.0.1 only, refuses requests with a foreign Host header, and needs the link it prints (or `--open`) for every data request, so other accounts on the machine cannot read your history through it. Keep `~/.hansard` private: Hansard creates it that way on macOS and Linux, and `hansard doctor` warns if it is not. Programs running as you can still read it directly, and your browser history keeps the link you opened. On a shared Linux or macOS machine, open the printed link yourself rather than using `--open`, which hands the link to the browser as a process argument other accounts can see. By default each run uses a new random token. To keep bookmarks working across restarts you can set a fixed `"ui": { "token": "<32 or more lowercase hex characters>" }` in `~/.hansard/config.json`; the token then lives in that file, and any program that listens on the port while hansard is stopped can capture it, so use it only on single-user machines.
 - **What is stored where.** By default everything is under `~/.hansard`:
   - `history.db`: the SQLite database
   - `archive/`: copies of the source files (Claude Code session files and imported claude.ai zips, each zip with a `<sha256>.json` sidecar), plus `machines/<id>.json`, which carries this machine's label so other machines sharing the archive can show it (a label can be personal)

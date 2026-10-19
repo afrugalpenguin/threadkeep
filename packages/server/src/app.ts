@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AddressInfo } from 'node:net';
 import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from '@hansard/core';
@@ -24,18 +24,20 @@ const CSP = [
   "frame-ancestors 'none'",
 ].join('; ');
 
+// The only routes served without the token: the page shell and its assets, which hold no data.
+const OPEN_ROUTES = new Set(['/', '/app.js', '/app.css']);
+
 const STATIC: Record<string, string> = {
   '/app.js': 'text/javascript; charset=utf-8',
   '/app.css': 'text/css; charset=utf-8',
 };
 
-export const indexHtml = (token: string): string =>
+export const indexHtml = (): string =>
   `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="hansard-token" content="${token}">
 <title>Hansard</title>
 <link rel="stylesheet" href="/app.css">
 </head>
@@ -48,11 +50,11 @@ export const indexHtml = (token: string): string =>
 
 export const routeOf = (request: FastifyRequest): string => request.routeOptions.url ?? 'unmatched';
 
+// Compares fixed-length digests so neither content nor length of the token leaks through timing.
 export function tokenMatches(expected: string, given: unknown): boolean {
   if (typeof given !== 'string') return false;
-  const a = Buffer.from(expected);
-  const b = Buffer.from(given);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const digest = (value: string): Buffer => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(expected), digest(given));
 }
 
 function securityHeaders(reply: FastifyReply): void {
@@ -63,7 +65,7 @@ function securityHeaders(reply: FastifyReply): void {
 }
 
 export function createApp(ctx: HansardContext, options: AppOptions): FastifyInstance {
-  // The token is embedded unescaped in the page, so only a plain hex string is acceptable.
+  // Only a plain hex string is acceptable as a token.
   if (!/^[0-9a-f]{32,}$/.test(options.token)) throw new Error('invalid token: expected at least 32 lowercase hex characters');
   const hostAllowed = (host: string | undefined): boolean => {
     const port = (app.server.address() as AddressInfo | null)?.port ?? options.port;
@@ -93,8 +95,13 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
     if (!hostAllowed(request.headers.host)) {
       return reply.code(403).send({ error: 'forbidden host' });
     }
-    if (request.method !== 'GET' && request.method !== 'HEAD' && !tokenMatches(options.token, request.headers['x-hansard-token'])) {
-      return reply.code(403).send({ error: 'missing or invalid token' });
+    const readOnly = request.method === 'GET' || request.method === 'HEAD';
+    // Fail closed: only the page shell and static assets are open. Everything else (every /api route,
+    // unknown paths, any other method) needs the token. Matching the raw path means an encoded or
+    // oddly cased variant of an open route is simply treated as needing the token.
+    const open = readOnly && OPEN_ROUTES.has(request.url.split('?')[0] ?? '');
+    if (!open && !tokenMatches(options.token, request.headers['x-hansard-token'])) {
+      return reply.code(readOnly || request.url.startsWith('/api/') ? 401 : 403).send({ error: 'missing or invalid token' });
     }
   });
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -106,7 +113,7 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
     options.log(`${request.method} ${routeOf(request)} ${reply.statusCode}`);
   });
 
-  app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(indexHtml(options.token)));
+  app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(indexHtml()));
   for (const [url, type] of Object.entries(STATIC)) {
     app.get(url, async (_request, reply) => {
       const file = path.join(options.publicDir, url.slice(1));
