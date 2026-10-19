@@ -123,3 +123,21 @@ describe('sessions and show on the fixture sessions', () => {
     expect(ambiguous.err).toContain('ambiguous');
   });
 });
+
+describe('doctor on the fixture sessions', () => {
+  it('reports archive size, session count and event count', async () => {
+    const box = await ingested();
+    const r = await box.cli('doctor');
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/^ok {4}archive size: [\d.]+ (B|KB|MB|GB) \(\d+ bytes\) in 4 files$/m);
+    expect(r.out).toMatch(/^ok {4}contents: 3 sessions, 13 events$/m);
+    expect(r.out).not.toContain(box.base);
+  });
+
+  it('reports an empty archive before the first ingest', async () => {
+    const box = sandbox();
+    const r = await box.cli('doctor');
+    expect(r.out).toMatch(/^ok {4}contents: 0 sessions, 0 events$/m);
+    expect(r.out).not.toMatch(/archive size/);
+  });
+});
