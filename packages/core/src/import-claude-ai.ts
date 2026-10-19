@@ -231,6 +231,7 @@ export async function importClaudeAi(
           continue;
         }
         const result: IngestResult = {
+          sourceFilesScanned: 0,
           mirroredFiles: 0,
           mirroredBytes: 0,
           filesIngested: 0,
@@ -238,6 +239,7 @@ export async function importClaudeAi(
           updatedEvents: 0,
           newRaw: 0,
           failedFiles: 0,
+          files: [],
           warnings: [],
         };
         await ingestArchive(ctx, db, [{ adapter: claudeAiAdapter, file }], result, {
