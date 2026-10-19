@@ -8,12 +8,16 @@
 //
 // The denylist is read from HANSARD_DENYLIST or ~/.hansard/denylist.txt. A missing denylist
 // is a failure. Output lists file, line number and rule name only.
+//
+// Session ids that exist on this machine are also rejected. They are collected from the Claude Code
+// projects dir and the hansard archive, or from HANSARD_SESSION_ROOTS (a path-delimited list) when set.
+// A root that exists but cannot be read is a failure.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { checkLine, excludedFiles, parseDenylist } from './hygiene-rules.mjs';
+import { delimiter, isAbsolute, join, resolve } from 'node:path';
+import { checkLine, collectSessionIds, excludedFiles, parseDenylist, redactSessionIds } from './hygiene-rules.mjs';
 
 const mode = process.argv[2];
 if (!['--staged', '--tracked', '--history'].includes(mode)) {
@@ -31,6 +35,29 @@ function loadDenylist() {
     process.exit(1);
   }
   return parseDenylist(readFileSync(path, 'utf8'));
+}
+
+// Mirrors loadContext in packages/core: archiveRoot from config.json, "<home>" and "~" expanded.
+function defaultSessionRoots() {
+  const userHome = homedir();
+  const home = resolve(process.env.HANSARD_HOME ?? join(userHome, '.hansard'));
+  let archiveRoot = '<home>/archive';
+  const configPath = join(home, 'config.json');
+  if (existsSync(configPath)) archiveRoot = JSON.parse(readFileSync(configPath, 'utf8')).archiveRoot ?? archiveRoot;
+  if (archiveRoot.startsWith('<home>')) archiveRoot = join(home, archiveRoot.slice('<home>'.length));
+  else if (archiveRoot === '~' || /^~[\\/]/.test(archiveRoot)) archiveRoot = join(userHome, archiveRoot.slice(1));
+  if (!isAbsolute(archiveRoot)) archiveRoot = resolve(archiveRoot);
+  return [join(userHome, '.claude', 'projects'), archiveRoot];
+}
+
+function loadSessionIds() {
+  try {
+    const override = process.env.HANSARD_SESSION_ROOTS;
+    return collectSessionIds(override ? override.split(delimiter).filter(Boolean) : defaultSessionRoots());
+  } catch {
+    console.error('hygiene: could not read the session roots to collect real session ids. Failing closed.');
+    process.exit(1);
+  }
 }
 
 // Yields { file, line, text } for every added line in a unified diff.
@@ -71,16 +98,19 @@ function source() {
 }
 
 const denylist = loadDenylist();
+const sessionIds = loadSessionIds();
 let scanned = 0;
 let findings = 0;
 for (const { file, line, text } of source()) {
   if (excludedFiles.includes(file)) continue;
   scanned += 1;
-  for (const rule of checkLine(text, denylist)) {
+  for (const rule of checkLine(text, denylist, sessionIds)) {
     findings += 1;
-    console.error(`hygiene: ${file}:${line} ${rule}`);
+    console.error(`hygiene: ${redactSessionIds(file, sessionIds)}:${line} ${rule}`);
   }
 }
 
-console.log(`hygiene ${mode.slice(2)}: ${scanned} lines scanned, ${denylist.length} denylist entries, ${findings} findings`);
+console.log(
+  `hygiene ${mode.slice(2)}: ${scanned} lines scanned, ${denylist.length} denylist entries, ${sessionIds.size} known session ids, ${findings} findings`,
+);
 process.exit(findings === 0 ? 0 : 1);
