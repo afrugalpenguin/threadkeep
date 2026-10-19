@@ -2,6 +2,8 @@
 *.db
 *.db-*
 *.jsonl
+# hand-written synthetic sessions, checked by the hygiene scan like any other file
+!tests/fixtures/claude-code/**/*.jsonl
 *.zip
 *.log
 .env*
