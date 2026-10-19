@@ -1,6 +1,6 @@
 import { getSession, openDb } from '@hansard/core';
 import { parse, str } from '../args.js';
-import { formatTime, jsonOut, projectName } from '../format.js';
+import { formatTime, jsonOut, oneLine, projectName } from '../format.js';
 import { usage, type Command } from '../types.js';
 
 export const showCommand: Command = async (args, env) => {
@@ -28,6 +28,11 @@ export const showCommand: Command = async (args, env) => {
     out(`source: ${session.source}  project: ${projectName(session.project_dir)}  events: ${session.event_count}\n\n`);
     for (const e of events) {
       const label = e.kind === 'tool' ? `tool ${e.tool_name ?? ''}`.trim() : e.kind === 'thinking' ? 'thinking' : e.role;
+      // A tool call is one line unless --expand-tools asks for its input and output.
+      if (e.kind === 'tool' && values['expand-tools'] !== true) {
+        out(`[${formatTime(e.timestamp)}] ${label}: ${oneLine(e.content)}\n`);
+        continue;
+      }
       out(`[${formatTime(e.timestamp)}] ${label}\n`);
       const body = e.content.length > 0 ? e.content : e.attachments.length > 0 ? '(attachment only)' : '';
       out(`${body.replace(/^/gm, '  ')}\n`);
