@@ -215,7 +215,7 @@ export function listSources(ctx: HansardContext): SourceInfo[] {
       id: adapter.id,
       displayName: adapter.displayName,
       kind: adapter.kind,
-      found: adapter.kind === 'import' ? true : locations.some((l) => l.found),
+      found: locations.some((l) => l.found),
       locations,
     };
   });

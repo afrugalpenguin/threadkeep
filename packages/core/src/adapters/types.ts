@@ -70,6 +70,10 @@ export interface ParseResult {
 export interface FixtureGenerator {
   // Writes synthetic local source data under root. Never reads real data.
   generate(opts: { root: string; sessions?: number }): { sessionIds: string[] };
+  // Writes a small, fixed demo data set (every case the parser handles, plus a fake secret that redaction
+  // must remove) in the shape this source would have on disk. `secret` is supplied by the caller so no
+  // credential-shaped text lives in the repo. Returns the files written, relative to root.
+  sample(opts: { root: string; secret: string }): { files: string[] };
 }
 
 export interface SourceAdapter {

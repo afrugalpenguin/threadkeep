@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FixtureGenerator } from '../types.js';
+import { zipStored } from './zip-write.js';
 
 type Json = Record<string, unknown>;
 
@@ -89,4 +90,25 @@ export const claudeAiFixtures: FixtureGenerator = {
     fs.writeFileSync(path.join(root, 'conversations.json'), JSON.stringify(data));
     return { sessionIds: data.map((c) => c['uuid'] as string) };
   },
+  sample: writeClaudeAiSample,
 };
+
+// Two titled demo conversations, one carrying the planted secret.
+export function sampleConversations(secret: string): Json[] {
+  const [first, second] = sampleExport() as [Json, Json];
+  const messages = first['chat_messages'] as Json[];
+  messages.push(message('m1-3', 'human', 3, { content: [textBlock(`For the deploy step my token is ${secret} so keep it handy`, 3)] }));
+  // Distinct leading characters keep the short ids shown by the CLI apart.
+  return [
+    { ...first, uuid: 'c1111111-0000-4000-8000-000000000001', updated_at: ISO(messages.length) },
+    { ...second, uuid: 'c2222222-0000-4000-8000-000000000002', name: 'Demo conversation 2' },
+  ];
+}
+
+// Writes root/export.zip containing conversations.json, the file a claude.ai data export carries.
+export function writeClaudeAiSample({ root, secret }: { root: string; secret: string }): { files: string[] } {
+  fs.mkdirSync(root, { recursive: true });
+  const zip = zipStored({ 'conversations.json': JSON.stringify(sampleConversations(secret)) });
+  fs.writeFileSync(path.join(root, 'export.zip'), zip);
+  return { files: ['export.zip'] };
+}
