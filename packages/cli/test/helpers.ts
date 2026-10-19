@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
 import { getAdapter } from '@hansard/core';
 import { run } from '../src/run.js';
@@ -50,7 +51,14 @@ export function seed(box: Sandbox, sessions = 2): string[] {
   return adapter.fixtures.generate({ root: box.claudeRoot, sessions }).sessionIds;
 }
 
-export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// The hand-written synthetic sessions in tests/fixtures/claude-code, copied in as ~/.claude/projects.
+export const FIXTURE_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'tests', 'fixtures', 'claude-code');
+
+export function copyFixtures(box: Sandbox): void {
+  fs.cpSync(FIXTURE_ROOT, box.claudeRoot, { recursive: true });
+}
+
+export const sleep =(ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function waitFor(check: () => boolean, ms = 8000): Promise<void> {
   const end = Date.now() + ms;
   while (!check()) {

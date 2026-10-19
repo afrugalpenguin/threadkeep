@@ -9,7 +9,19 @@ import { adapters } from './adapters/registry.js';
 import type { ArchiveFile, MirrorReport, ParseResult, SourceAdapter } from './adapters/types.js';
 import { openDb, type Db } from './store/db.js';
 
+export type FileStatus = 'ingested' | 'unchanged' | 'skipped' | 'failed';
+
+// One per archive file looked at. Reasons for skipped and failed files are in warnings.
+export interface FileOutcome {
+  relPath: string;
+  status: FileStatus;
+  newEvents: number;
+  newRaw: number;
+}
+
 export interface IngestResult {
+  // Local source files the mirror looked at.
+  sourceFilesScanned: number;
   mirroredFiles: number;
   mirroredBytes: number;
   filesIngested: number;
@@ -18,6 +30,7 @@ export interface IngestResult {
   newRaw: number;
   // Archive files that failed to ingest and were skipped; the rest of the run still completes.
   failedFiles: number;
+  files: FileOutcome[];
   warnings: string[];
 }
 
@@ -29,6 +42,7 @@ export interface IngestOptions {
 }
 
 const emptyResult = (): IngestResult => ({
+  sourceFilesScanned: 0,
   mirroredFiles: 0,
   mirroredBytes: 0,
   filesIngested: 0,
@@ -36,10 +50,12 @@ const emptyResult = (): IngestResult => ({
   updatedEvents: 0,
   newRaw: 0,
   failedFiles: 0,
+  files: [],
   warnings: [],
 });
 
 function addMirror(result: IngestResult, report: MirrorReport): void {
+  result.sourceFilesScanned += report.filesScanned;
   result.mirroredFiles += report.filesMirrored;
   result.mirroredBytes += report.bytesAppended;
   for (const skip of report.skipped) result.warnings.push(`${skip.relPath}: ${skip.reason}`);
@@ -273,11 +289,11 @@ export function refreshSessions(db: Db, ids: Iterable<string>): void {
   }
 }
 
-function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, file: ArchiveFile, result: IngestResult): boolean {
+function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, file: ArchiveFile, result: IngestResult): FileStatus {
   const reason = adapter.skipReason?.(file);
   if (reason) {
     result.warnings.push(`${file.relPath}: ${reason}`);
-    return false;
+    return 'skipped';
   }
   const state = db
     .prepare('select byte_offset from ingest_state where adapter = ? and key = ?')
@@ -288,13 +304,13 @@ function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, fil
     size = fs.statSync(file.absPath).size;
   } catch {
     result.warnings.push(`${file.relPath}: archive file unreadable, skipped`);
-    return false;
+    return 'skipped';
   }
   if (size < offset) {
     result.warnings.push(`${file.relPath}: archive file shorter than ingested offset, skipped`);
-    return false;
+    return 'skipped';
   }
-  if (size === offset) return false;
+  if (size === offset) return 'unchanged';
   const fd = fs.openSync(file.absPath, 'r');
   let buffer: Buffer;
   try {
@@ -310,7 +326,7 @@ function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, fil
     fs.closeSync(fd);
   }
   const lastNewline = buffer.lastIndexOf(0x0a);
-  if (lastNewline < 0) return false; // only a partial line so far
+  if (lastNewline < 0) return 'unchanged'; // only a partial line so far
   const text = buffer.subarray(0, lastNewline + 1).toString('utf8');
   const parsed = adapter.parse(file, { text, startOffset: offset }, ctx);
   const touched = new Set<string>();
@@ -327,7 +343,7 @@ function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, fil
   result.newEvents += counts.newEvents;
   result.updatedEvents += counts.updatedEvents;
   result.newRaw += counts.newRaw;
-  return counts.newRaw > 0 || counts.newEvents > 0;
+  return counts.newRaw > 0 || counts.newEvents > 0 ? 'ingested' : 'unchanged';
 }
 
 const BATCH = 25;
@@ -353,23 +369,23 @@ async function ingestImportFile(
   file: ArchiveFile,
   result: IngestResult,
   options: IngestOptions,
-): Promise<boolean> {
+): Promise<FileStatus> {
   const reason = adapter.skipReason?.(file);
   if (reason) {
     result.warnings.push(`${file.relPath}: ${reason}`);
-    return false;
+    return 'skipped';
   }
   let size: number;
   try {
     size = fs.statSync(file.absPath).size;
   } catch {
     result.warnings.push(`${file.relPath}: archive file unreadable, skipped`);
-    return false;
+    return 'skipped';
   }
   const state = db
     .prepare('select byte_offset, extra from ingest_state where adapter = ? and key = ?')
     .get(adapter.id, file.relPath) as { byte_offset: number; extra: string | null } | undefined;
-  if (state?.extra === 'done' && state.byte_offset === size) return false;
+  if (state?.extra === 'done' && state.byte_offset === size) return 'unchanged';
 
   let changed = false;
   const writeBatch = (batch: ParseResult[]) => {
@@ -405,7 +421,7 @@ async function ingestImportFile(
     `insert into ingest_state (adapter, key, byte_offset, mtime, extra) values (?, ?, ?, ?, 'done')
      on conflict (adapter, key) do update set byte_offset = excluded.byte_offset, mtime = excluded.mtime, extra = 'done'`,
   ).run(adapter.id, file.relPath, size, new Date().toISOString());
-  return changed;
+  return changed ? 'ingested' : 'unchanged';
 }
 
 export async function ingestArchive(
@@ -419,16 +435,20 @@ export async function ingestArchive(
   for (const { adapter, file } of files) {
     // Let timers (the lock heartbeat) run between files; ingest is otherwise synchronous.
     await new Promise<void>((resolve) => setImmediate(resolve));
+    const before = { events: result.newEvents, raw: result.newRaw };
+    let status: FileStatus;
     try {
-      const changed = adapter.parseArchive
+      status = adapter.parseArchive
         ? await ingestImportFile(ctx, db, adapter, file, result, options)
         : ingestLineFile(ctx, db, adapter, file, result);
-      if (changed) result.filesIngested += 1;
+      if (status === 'ingested') result.filesIngested += 1;
     } catch {
       // One bad file must not block every other file. No error text: it can quote content.
       result.warnings.push(`${file.relPath}: ingest failed, skipped`);
       result.failedFiles += 1;
+      status = 'failed';
     }
+    result.files.push({ relPath: file.relPath, status, newEvents: result.newEvents - before.events, newRaw: result.newRaw - before.raw });
     index += 1;
     options.onProgress?.(index, files.length, file.relPath);
   }

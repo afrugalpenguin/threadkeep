@@ -8,6 +8,7 @@ export const searchCommand: Command = async (args, env) => {
     source: { type: 'string' },
     project: { type: 'string' },
     since: { type: 'string' },
+    until: { type: 'string' },
     role: { type: 'string' },
     machine: { type: 'string' },
     sort: { type: 'string' },
@@ -23,7 +24,7 @@ export const searchCommand: Command = async (args, env) => {
     thinking: values['thinking'] === true,
     limit: intFlag(values['limit'], 'limit', 20),
   };
-  for (const key of ['source', 'project', 'since', 'role'] as const) {
+  for (const key of ['source', 'project', 'since', 'until', 'role'] as const) {
     const value = str(values[key]);
     if (value) options[key] = value;
   }

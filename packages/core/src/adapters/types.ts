@@ -8,6 +8,7 @@ export interface ArchiveFile {
 }
 
 export interface MirrorReport {
+  filesScanned: number;
   filesMirrored: number;
   bytesAppended: number;
   skipped: { relPath: string; reason: string }[];

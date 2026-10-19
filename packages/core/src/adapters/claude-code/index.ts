@@ -80,7 +80,7 @@ export const claudeCodeAdapter: SourceAdapter = {
     return [{ location: r, found, detail: `${found ? listLocalSessions(r).length : 0} session files` }];
   },
   mirror(ctx, opts): MirrorReport {
-    const report: MirrorReport = { filesMirrored: 0, bytesAppended: 0, skipped: [] };
+    const report: MirrorReport = { filesScanned: 0, filesMirrored: 0, bytesAppended: 0, skipped: [] };
     const r = root(ctx);
     if (!r) return report;
     if (opts?.file) {

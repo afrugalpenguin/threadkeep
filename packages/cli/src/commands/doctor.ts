@@ -25,6 +25,28 @@ function writable(dir: string): boolean {
   }
 }
 
+function archiveSize(dir: string): { bytes: number; files: number } {
+  let bytes = 0;
+  let files = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile()) continue;
+    bytes += fs.statSync(path.join(entry.parentPath, entry.name)).size;
+    files += 1;
+  }
+  return { bytes, files };
+}
+
+function humanBytes(n: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = n;
+  let unit = 0;
+  while (value >= 1000 && unit < units.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+  return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`;
+}
+
 function onPath(env: Record<string, string | undefined>): boolean {
   const names = process.platform === 'win32' ? ['hansard.cmd', 'hansard.exe', 'hansard.ps1', 'hansard'] : ['hansard'];
   const dirs = (env['PATH'] ?? env['Path'] ?? '').split(path.delimiter).filter(Boolean);
@@ -65,6 +87,14 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
     const db = openDb(ctx.dbPath);
     try {
       add('ok', 'database', `${displayPath(ctx, ctx.dbPath)} schema version ${schemaVersion(db)}`);
+      const count = (sql: string) => (db.prepare(sql).get() as { n: number }).n;
+      const excluded = count('select count(*) as n from sessions where excluded = 1');
+      add(
+        'ok',
+        'contents',
+        `${count('select count(*) as n from sessions')} sessions, ${count('select count(*) as n from events')} events` +
+          (excluded > 0 ? `, ${excluded} sessions excluded` : ''),
+      );
       for (const m of machineSummary(ctx, db)) {
         add('ok', 'machine sessions', `${m.label ?? shortId(m.id)}: ${m.sessions}${m.current ? ' (this machine)' : ''}`);
       }
@@ -76,8 +106,15 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
   }
 
   if (!fs.existsSync(ctx.archiveRoot)) add('warn', 'archive', `${displayPath(ctx, ctx.archiveRoot)} does not exist yet, created on first ingest`);
-  else if (writable(ctx.archiveRoot)) add('ok', 'archive', `${displayPath(ctx, ctx.archiveRoot)} reachable and writable`);
-  else add('fail', 'archive', `${displayPath(ctx, ctx.archiveRoot)} is not writable`);
+  else if (writable(ctx.archiveRoot)) {
+    add('ok', 'archive', `${displayPath(ctx, ctx.archiveRoot)} reachable and writable`);
+    try {
+      const size = archiveSize(ctx.archiveRoot);
+      add('ok', 'archive size', `${humanBytes(size.bytes)} (${size.bytes} bytes) in ${size.files} files`);
+    } catch {
+      add('warn', 'archive size', 'could not read every archive file');
+    }
+  } else add('fail', 'archive', `${displayPath(ctx, ctx.archiveRoot)} is not writable`);
 
   add('ok', 'machine', `${shortId(ctx.machineId)} label ${ctx.machineLabel ?? '(none)'}`);
 

@@ -8,6 +8,7 @@ export const sessionsCommand: Command = async (args, env) => {
     source: { type: 'string' },
     project: { type: 'string' },
     since: { type: 'string' },
+    until: { type: 'string' },
     machine: { type: 'string' },
     sort: { type: 'string' },
     limit: { type: 'string' },
@@ -19,7 +20,7 @@ export const sessionsCommand: Command = async (args, env) => {
     sort: oneOf(values['sort'], 'sort', ['time', 'project', 'source', 'length'] as const) ?? 'time',
     limit: intFlag(values['limit'], 'limit', 50),
   };
-  for (const key of ['source', 'project', 'since'] as const) {
+  for (const key of ['source', 'project', 'since', 'until'] as const) {
     const value = str(values[key]);
     if (value) options[key] = value;
   }

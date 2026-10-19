@@ -61,7 +61,8 @@ function readRange(fd: number, start: number, length: number): Buffer {
 // and the source is only ever opened read-only.
 export function mirrorOne(ctx: HansardContext, adapterId: string, session: LocalSession, report: MirrorReport): void {
   const { abs, rel } = archivePathFor(ctx, adapterId, session);
-  const skip = (reason: string): void => {
+  report.filesScanned += 1;
+  const skip =(reason: string): void => {
     report.skipped.push({ relPath: rel, reason });
   };
   let fd: number;

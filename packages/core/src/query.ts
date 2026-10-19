@@ -18,14 +18,27 @@ export function pagingValue(value: number | undefined, name: string, fallback: n
   return n;
 }
 
-export function parseSince(value: string, now: Date = new Date()): string {
+function parseTime(value: string, name: string, now: Date): string {
   const relative = /^(\d+)([hdw])$/.exec(value.trim());
   if (relative) {
     const unit = { h: 3_600_000, d: 86_400_000, w: 604_800_000 }[relative[2] as 'h' | 'd' | 'w'];
     return new Date(now.getTime() - Number(relative[1]) * unit).toISOString();
   }
   if (/^\d{4}-\d{2}-\d{2}([T ][\d:.]+Z?)?$/.test(value.trim()) && !Number.isNaN(Date.parse(value))) return value.trim();
-  throw new UsageError(`invalid since value: use a duration like 7d or a date like 2026-10-01`);
+  throw new UsageError(`invalid ${name} value: use a duration like 7d or a date like 2026-10-01`);
+}
+
+export function parseSince(value: string, now: Date = new Date()): string {
+  return parseTime(value, 'since', now);
+}
+
+// Exclusive upper bound. A bare date includes that whole day, so it becomes the next day.
+export function parseUntil(value: string, now: Date = new Date()): string {
+  const time = parseTime(value, 'until', now);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(time)) return time;
+  const next = new Date(`${time}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
 }
 
 // One quoted token per whitespace-separated word, ANDed, so user input can never be FTS5 syntax.
@@ -40,6 +53,7 @@ export interface SearchOptions {
   source?: string;
   project?: string;
   since?: string;
+  until?: string;
   role?: string;
   machine?: string;
   sort?: 'rank' | 'time';
@@ -70,6 +84,7 @@ export function search(db: Db, options: SearchOptions): SearchHit[] {
   if (options.source) (where.push('e.source = ?'), params.push(options.source));
   if (options.project) (where.push('instr(lower(e.project_dir), lower(?)) > 0'), params.push(options.project));
   if (options.since) (where.push('e.timestamp >= ?'), params.push(parseSince(options.since)));
+  if (options.until) (where.push('e.timestamp < ?'), params.push(parseUntil(options.until)));
   if (options.role) (where.push('e.role = ?'), params.push(options.role));
   if (options.machine) (where.push('e.machine_id = ?'), params.push(options.machine));
   params.push(pagingValue(options.limit, 'limit', 20));
@@ -104,6 +119,7 @@ export interface ListSessionsOptions {
   source?: string;
   project?: string;
   since?: string;
+  until?: string;
   machine?: string;
   sort?: 'time' | 'project' | 'source' | 'length';
   limit?: number;
@@ -116,6 +132,7 @@ export function listSessions(db: Db, options: ListSessionsOptions = {}): Session
   if (options.source) (where.push('source = ?'), params.push(options.source));
   if (options.project) (where.push('instr(lower(project_dir), lower(?)) > 0'), params.push(options.project));
   if (options.since) (where.push('started_at >= ?'), params.push(parseSince(options.since)));
+  if (options.until) (where.push('started_at < ?'), params.push(parseUntil(options.until)));
   if (options.machine) (where.push('machine_id = ?'), params.push(options.machine));
   const order = {
     time: 'started_at desc',

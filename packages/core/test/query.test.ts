@@ -12,6 +12,7 @@ import {
   matchesGlob,
   openDb,
   parseSince,
+  parseUntil,
   readExclusions,
   rebuild,
   search,
@@ -109,6 +110,15 @@ describe('search', () => {
     expect(parseSince('2026-01-05')).toBe('2026-01-05');
     expect(() => parseSince('yesterday')).toThrow(UsageError);
     expect(() => parseSince('yesterday')).toThrow(/^invalid since value: use a duration like 7d or a date like 2026-10-01$/);
+  });
+
+  it('parses until values, with a bare date covering that whole day', () => {
+    const now = new Date('2026-03-10T12:00:00.000Z');
+    expect(parseUntil('7d', now)).toBe('2026-03-03T12:00:00.000Z');
+    expect(parseUntil('2026-01-05')).toBe('2026-01-06');
+    expect(parseUntil('2026-02-28')).toBe('2026-03-01');
+    expect(parseUntil('2026-01-05T10:00:00Z')).toBe('2026-01-05T10:00:00Z');
+    expect(() => parseUntil('soon')).toThrow(/^invalid until value: use a duration like 7d or a date like 2026-10-01$/);
   });
 });
 
