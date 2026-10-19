@@ -36,7 +36,7 @@ The adapter owns its `ingest_state` keys. The key is `ArchiveFile.relPath`, rela
 5. Exclusion test: an excluded project or session disappears from every read path.
 6. `describe()` entry filled in accurately.
 7. `hansard sources` lists the adapter and reports `found` correctly.
-8. Docs: mention the source in the README and add a note here if it has quirks.
+8. Docs: mention the source in [docs/usage.md](docs/usage.md) and [docs/data.md](docs/data.md), and add a note here if it has quirks.
 
 ## Existing adapters
 
