@@ -18,14 +18,14 @@ describe('read token', () => {
   it('rejects every api read without a token or with a wrong one, and accepts the right one', async () => {
     const { app } = await setup();
     for (const url of READS) {
-      for (const headers of [{ host: HOST }, { host: HOST, 'x-hansard-token': 'wrong' }, { host: HOST, 'x-hansard-token': TOKEN.slice(1) }]) {
+      for (const headers of [{ host: HOST }, { host: HOST, 'x-threadkeep-token': 'wrong' }, { host: HOST, 'x-threadkeep-token': TOKEN.slice(1) }]) {
         const res = await app.inject({ url, headers });
         expect(res.statusCode, url).toBe(401);
         expect(res.json(), url).toEqual({ error: 'missing or invalid token' });
         expect(res.headers['content-security-policy'], url).toContain("default-src 'none'");
         expect(res.headers['cache-control'], url).toBe('no-store');
       }
-      const ok = await app.inject({ url, headers: { host: HOST, 'x-hansard-token': TOKEN } });
+      const ok = await app.inject({ url, headers: { host: HOST, 'x-threadkeep-token': TOKEN } });
       expect(ok.statusCode, url).toBe(url === '/api/nope' ? 404 : 200);
     }
   });
@@ -34,7 +34,7 @@ describe('read token', () => {
     const { app } = await setup();
     for (const url of READS.slice(0, 5)) {
       expect((await app.inject({ method: 'HEAD', url, headers: { host: HOST } })).statusCode, url).toBe(401);
-      expect((await app.inject({ method: 'HEAD', url, headers: { host: HOST, 'x-hansard-token': TOKEN } })).statusCode, url).toBe(200);
+      expect((await app.inject({ method: 'HEAD', url, headers: { host: HOST, 'x-threadkeep-token': TOKEN } })).statusCode, url).toBe(200);
     }
     const post = (headers: Record<string, string>) =>
       app.inject({
@@ -44,7 +44,7 @@ describe('read token', () => {
         payload: JSON.stringify({ status: 'confirmed' }),
       });
     expect((await post({})).statusCode).toBe(401);
-    expect((await post({ 'x-hansard-token': TOKEN })).statusCode).toBe(200);
+    expect((await post({ 'x-threadkeep-token': TOKEN })).statusCode).toBe(200);
   });
 
   it('cannot be bypassed with an encoded or oddly cased path', async () => {
@@ -84,7 +84,7 @@ describe('read token', () => {
   it('logs method, route and status only, never the token', async () => {
     const { app, lines } = await setup();
     await app.inject({ url: '/api/sessions', headers: { host: HOST } });
-    await app.inject({ url: '/api/search?q=visible', headers: { host: HOST, 'x-hansard-token': TOKEN } });
+    await app.inject({ url: '/api/search?q=visible', headers: { host: HOST, 'x-threadkeep-token': TOKEN } });
     expect(lines).toContain('GET /api/sessions 401');
     expect(lines).toContain('GET /api/search 200');
     expect(lines.join('\n')).not.toContain(TOKEN);

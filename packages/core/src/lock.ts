@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
-import type { HansardContext } from './config.js';
+import type { ThreadkeepContext } from './config.js';
 
 export class BusyError extends Error {
   constructor() {
-    super('busy: another hansard run holds the ingest lock');
+    super('busy: another threadkeep run holds the ingest lock');
     this.name = 'BusyError';
   }
 }
@@ -79,7 +79,7 @@ function takeOver(lockPath: string, judged: string, warn: ((m: string) => void) 
 }
 
 // Held for every mirror, ingest and rebuild so concurrent runs cannot double-append to the archive.
-export async function withLock<T>(ctx: HansardContext, options: LockOptions, fn: () => Promise<T> | T): Promise<T> {
+export async function withLock<T>(ctx: ThreadkeepContext, options: LockOptions, fn: () => Promise<T> | T): Promise<T> {
   const deadline = Date.now() + (options.waitMs ?? 30_000);
   const token = randomUUID();
   for (;;) {

@@ -1,4 +1,4 @@
-import { readExclusions, writeExclusions, type ExclusionsFile, type HansardContext } from './config.js';
+import { readExclusions, writeExclusions, type ExclusionsFile, type ThreadkeepContext } from './config.js';
 import { toPosix } from './paths.js';
 import type { Db } from './store/db.js';
 
@@ -50,7 +50,7 @@ export function applyExclusions(db: Db, exclusions: ExclusionsFile, ids?: Iterab
 export type ExclusionChange = { kind: 'project' | 'session'; value: string };
 
 // Writes exclusions.json then recomputes the flag for every session. Returns false when nothing changed.
-export function changeExclusion(ctx: HansardContext, db: Db, op: 'add' | 'remove', change: ExclusionChange): boolean {
+export function changeExclusion(ctx: ThreadkeepContext, db: Db, op: 'add' | 'remove', change: ExclusionChange): boolean {
   const value = change.value.trim();
   if (value === '') throw new Error('exclusion value must not be empty');
   const current = readExclusions(ctx);

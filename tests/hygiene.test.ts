@@ -84,7 +84,7 @@ describe('example denylist', () => {
     const output = execFileSync('node', ['scripts/check-hygiene.mjs', '--tracked'], {
       cwd: repoRoot,
       encoding: 'utf8',
-      env: { ...process.env, HANSARD_DENYLIST: examplePath },
+      env: { ...process.env, THREADKEEP_DENYLIST: examplePath },
     });
     expect(output).toMatch(/ 0 findings/);
   });
@@ -122,7 +122,7 @@ describe('tracked files', () => {
 describe('real session ids', () => {
   const dirs: string[] = [];
   const tempDir = () => {
-    const dir = mkdtempSync(join(tmpdir(), 'hansard-hygiene-'));
+    const dir = mkdtempSync(join(tmpdir(), 'threadkeep-hygiene-'));
     dirs.push(dir);
     return dir;
   };
@@ -147,7 +147,7 @@ describe('real session ids', () => {
     spawnSync('node', ['scripts/check-hygiene.mjs', '--tracked'], {
       cwd: repoRoot,
       encoding: 'utf8',
-      env: { ...process.env, HANSARD_DENYLIST: join(repoRoot, 'denylist.example.txt'), HANSARD_SESSION_ROOTS: roots },
+      env: { ...process.env, THREADKEEP_DENYLIST: join(repoRoot, 'denylist.example.txt'), THREADKEEP_SESSION_ROOTS: roots },
     });
 
   it('fails the scan when a tracked file contains an id found on this machine, without printing it', () => {

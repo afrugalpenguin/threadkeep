@@ -9,7 +9,7 @@ import {
   openDb,
   rebuild,
   search,
-  type HansardContext,
+  type ThreadkeepContext,
 } from '../src/index.js';
 import { ISO, conversation, message, sampleExport, textBlock } from '../src/adapters/claude-ai/fixtures.js';
 import { makeMachine, sha256File, tempDir } from './helpers.js';
@@ -25,7 +25,7 @@ async function exportZip(dir: string, name: string, data: unknown[], extra: Reco
   return file;
 }
 
-const rows = (ctx: HansardContext, sql: string) => {
+const rows = (ctx: ThreadkeepContext, sql: string) => {
   const db = openDb(ctx.dbPath);
   try {
     return db.prepare(sql).all() as Record<string, unknown>[];
@@ -159,10 +159,10 @@ describe('claude.ai import', () => {
     await importClaudeAi(a.ctx, [two]);
     await importClaudeAi(b.ctx, [two]);
     await importClaudeAi(b.ctx, [one]);
-    const state = (ctx: HansardContext) =>
+    const state = (ctx: ThreadkeepContext) =>
       rows(ctx, 'select id, content, source_updated_at, timestamp from events order by id');
     expect(state(a.ctx)).toEqual(state(b.ctx));
-    const titles = (ctx: HansardContext) => rows(ctx, 'select id, title, event_count from sessions order by id');
+    const titles = (ctx: ThreadkeepContext) => rows(ctx, 'select id, title, event_count from sessions order by id');
     expect(titles(a.ctx)).toEqual(titles(b.ctx));
   });
 
@@ -224,7 +224,7 @@ describe('claude.ai import', () => {
     const b = makeMachine({ archiveRoot });
     await importClaudeAi(a.ctx, [await exportZip(tempDir(), 'one.zip', sampleExport())]);
     await ingestAll(b.ctx);
-    const ids = (ctx: HansardContext) => ({
+    const ids = (ctx: ThreadkeepContext) => ({
       events: rows(ctx, 'select id from events order by id').map((r) => r['id']),
       sessions: rows(ctx, 'select id, machine_id from sessions order by id'),
     });

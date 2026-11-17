@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeMachineArchiveFile, type HansardContext } from './config.js';
+import { writeMachineArchiveFile, type ThreadkeepContext } from './config.js';
 import { ingestArchive, type IngestResult } from './ingest.js';
 import { withLock } from './lock.js';
 import { mkdirPrivate, relativeWithin } from './paths.js';
@@ -151,7 +151,7 @@ const categoryOf = (candidate: Candidate): string => {
 };
 
 export async function importClaudeAi(
-  ctx: HansardContext,
+  ctx: ThreadkeepContext,
   inputs: string[],
   options: ImportOptions = {},
 ): Promise<ImportReport> {

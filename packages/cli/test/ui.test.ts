@@ -7,7 +7,7 @@ import { sandbox, seed, waitFor, type Sandbox } from './helpers.js';
 
 const OPEN_LINE = /open (http:\/\/127\.0\.0\.1:\d+\/)#token=([0-9a-f]+)/;
 
-// Starts `hansard ui` on an ephemeral port and returns what it printed once listening.
+// Starts `threadkeep ui` on an ephemeral port and returns what it printed once listening.
 async function start(box: Sandbox) {
   let out = '';
   let err = '';
@@ -33,7 +33,7 @@ async function start(box: Sandbox) {
   };
 }
 
-const withToken = (token: string) => ({ headers: { 'x-hansard-token': token } });
+const withToken = (token: string) => ({ headers: { 'x-threadkeep-token': token } });
 
 function setUiToken(box: Sandbox, value: unknown): void {
   fs.mkdirSync(box.home, { recursive: true });

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { HansardContext } from '../../config.js';
+import type { ThreadkeepContext } from '../../config.js';
 import { PRIVATE_FILE_MODE, mkdirPrivate, toPosix } from '../../paths.js';
 import type { MirrorReport } from '../types.js';
 
@@ -13,7 +13,7 @@ export interface LocalSession {
   localPath: string;
 }
 
-export function archivePathFor(ctx: HansardContext, adapterId: string, s: LocalSession): { abs: string; rel: string } {
+export function archivePathFor(ctx: ThreadkeepContext, adapterId: string, s: LocalSession): { abs: string; rel: string } {
   const rel = toPosix(path.join('raw', adapterId, ctx.machineId, s.projectFolder, s.fileName));
   return { abs: path.join(ctx.archiveRoot, rel), rel };
 }
@@ -59,7 +59,7 @@ function readRange(fd: number, start: number, length: number): Buffer {
 
 // Append-only byte mirror. The archive file is the only state: it is never rewritten, truncated or deleted,
 // and the source is only ever opened read-only.
-export function mirrorOne(ctx: HansardContext, adapterId: string, session: LocalSession, report: MirrorReport): void {
+export function mirrorOne(ctx: ThreadkeepContext, adapterId: string, session: LocalSession, report: MirrorReport): void {
   const { abs, rel } = archivePathFor(ctx, adapterId, session);
   report.filesScanned += 1;
   const skip =(reason: string): void => {

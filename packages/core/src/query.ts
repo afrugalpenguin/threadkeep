@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { HansardContext } from './config.js';
+import type { ThreadkeepContext } from './config.js';
 import { splitToolContent } from './ids.js';
 import { adapters } from './adapters/registry.js';
 import type { Db } from './store/db.js';
@@ -225,7 +225,7 @@ export interface SourceInfo {
   locations: { location: string; found: boolean; detail?: string }[];
 }
 
-export function listSources(ctx: HansardContext): SourceInfo[] {
+export function listSources(ctx: ThreadkeepContext): SourceInfo[] {
   return adapters.map((adapter) => {
     const locations = adapter.discover(ctx);
     return {
@@ -245,7 +245,7 @@ export interface MachineInfo {
   current: boolean;
 }
 
-export function machineSummary(ctx: HansardContext, db: Db): MachineInfo[] {
+export function machineSummary(ctx: ThreadkeepContext, db: Db): MachineInfo[] {
   const labels = new Map<string, string | null>();
   const dir = path.join(ctx.archiveRoot, 'machines');
   try {
@@ -279,7 +279,7 @@ export interface Facets {
   machines: MachineInfo[];
 }
 
-export function listFacets(ctx: HansardContext, db: Db): Facets {
+export function listFacets(ctx: ThreadkeepContext, db: Db): Facets {
   const column = (sql: string) => (db.prepare(sql).all() as { v: string }[]).map((r) => r.v);
   return {
     sources: column('select distinct source as v from sessions where excluded = 0 order by v'),

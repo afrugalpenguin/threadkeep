@@ -31,7 +31,7 @@ describe('index page', () => {
     const { app } = await setup();
     const res = await app.inject({ url: '/', headers: { host: HOST, origin: 'http://evil.example' } });
     expect(res.body).not.toContain(TOKEN);
-    expect(res.body).not.toContain('hansard-token');
+    expect(res.body).not.toContain('threadkeep-token');
     expect(res.headers['content-security-policy']).toContain("default-src 'none'");
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
     expect(res.headers['content-security-policy']).toContain("img-src 'none'");

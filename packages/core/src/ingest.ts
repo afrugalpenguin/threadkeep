@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { mkdirPrivate } from './paths.js';
-import { readExclusions, writeMachineArchiveFile, type HansardContext } from './config.js';
+import { readExclusions, writeMachineArchiveFile, type ThreadkeepContext } from './config.js';
 import { applyExclusions } from './exclusions.js';
 import { TOOL_OUTPUT_SEPARATOR, splitToolContent, titleFromText } from './ids.js';
 import { withLock } from './lock.js';
@@ -289,7 +289,7 @@ export function refreshSessions(db: Db, ids: Iterable<string>): void {
   }
 }
 
-function ingestLineFile(ctx: HansardContext, db: Db, adapter: SourceAdapter, file: ArchiveFile, result: IngestResult): FileStatus {
+function ingestLineFile(ctx: ThreadkeepContext, db: Db, adapter: SourceAdapter, file: ArchiveFile, result: IngestResult): FileStatus {
   const reason = adapter.skipReason?.(file);
   if (reason) {
     result.warnings.push(`${file.relPath}: ${reason}`);
@@ -363,7 +363,7 @@ function mergeParsed(parts: ParseResult[]): ParseResult {
 
 // Import adapters stream an immutable archive file; it is marked done once fully ingested.
 async function ingestImportFile(
-  ctx: HansardContext,
+  ctx: ThreadkeepContext,
   db: Db,
   adapter: SourceAdapter,
   file: ArchiveFile,
@@ -425,7 +425,7 @@ async function ingestImportFile(
 }
 
 export async function ingestArchive(
-  ctx: HansardContext,
+  ctx: ThreadkeepContext,
   db: Db,
   files: { adapter: SourceAdapter; file: ArchiveFile }[],
   result: IngestResult,
@@ -454,7 +454,7 @@ export async function ingestArchive(
   }
 }
 
-export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}): Promise<IngestResult> {
+export async function ingestAll(ctx: ThreadkeepContext, options: IngestOptions = {}): Promise<IngestResult> {
   const result = emptyResult();
   return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
     mkdirPrivate(ctx.archiveRoot);
@@ -474,7 +474,7 @@ export async function ingestAll(ctx: HansardContext, options: IngestOptions = {}
 }
 
 // Used by hooks: mirror and ingest one local session file.
-export async function ingestFile(ctx: HansardContext, localPath: string, options: IngestOptions = {}): Promise<IngestResult> {
+export async function ingestFile(ctx: ThreadkeepContext, localPath: string, options: IngestOptions = {}): Promise<IngestResult> {
   const owner = adapters.find((adapter) => adapter.archiveFileFor?.(ctx, localPath));
   if (!owner || !owner.archiveFileFor || !owner.mirror) throw new Error('path is not under any configured source root');
   const file = owner.archiveFileFor(ctx, localPath) as ArchiveFile;
@@ -503,7 +503,7 @@ export interface RebuildResult {
 
 // Drops everything derived from the archive and re-ingests it with the current parsers and redaction patterns.
 // Decisions, links and imports are local state and are kept.
-export async function rebuild(ctx: HansardContext, options: IngestOptions = {}): Promise<RebuildResult> {
+export async function rebuild(ctx: ThreadkeepContext, options: IngestOptions = {}): Promise<RebuildResult> {
   const result = emptyResult();
   return withLock(ctx, { waitMs: options.waitMs ?? 30_000, onWarning: (w) => result.warnings.push(w) }, async () => {
     const db = openDb(ctx.dbPath);

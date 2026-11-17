@@ -16,7 +16,7 @@ async function call<T>(path: string, params: Record<string, string> = {}, init?:
   const sent = currentToken();
   const res = await fetch(query ? `${path}?${query}` : path, {
     ...init,
-    headers: { ...(init?.headers as Record<string, string> | undefined), 'x-hansard-token': sent },
+    headers: { ...(init?.headers as Record<string, string> | undefined), 'x-threadkeep-token': sent },
   });
   // Another tab may have stored a newer token meanwhile; only drop the one this request used.
   if (res.status === 401 && currentToken() === sent) clearToken();

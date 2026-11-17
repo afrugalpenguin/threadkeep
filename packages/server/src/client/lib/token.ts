@@ -1,4 +1,4 @@
-export const TOKEN_KEY = 'hansard-token';
+export const TOKEN_KEY = 'threadkeep-token';
 export const DEFAULT_HASH = '#/sessions';
 
 // Pulls the run token out of a `#token=<hex>` fragment. Anything after the first `&` becomes the

@@ -25,13 +25,13 @@ describe('decision status writes', () => {
   it('requires the token', async () => {
     const { post } = await setup();
     expect((await post('d1', { status: 'confirmed' })).statusCode).toBe(401);
-    expect((await post('d1', { status: 'confirmed' }, { 'x-hansard-token': 'wrong' })).statusCode).toBe(401);
-    expect((await post('d1', { status: 'confirmed' }, { 'x-hansard-token': TOKEN })).json()).toMatchObject({ id: 'd1', status: 'confirmed' });
+    expect((await post('d1', { status: 'confirmed' }, { 'x-threadkeep-token': 'wrong' })).statusCode).toBe(401);
+    expect((await post('d1', { status: 'confirmed' }, { 'x-threadkeep-token': TOKEN })).json()).toMatchObject({ id: 'd1', status: 'confirmed' });
   });
 
   it('rejects form posts, bad bodies, repeats, unknown and excluded ids', async () => {
     const { app, post, m } = await setup();
-    const auth = { 'x-hansard-token': TOKEN };
+    const auth = { 'x-threadkeep-token': TOKEN };
     const form = await app.inject({
       method: 'POST',
       url: '/api/decisions/d1/status',
@@ -57,7 +57,7 @@ describe('error responses on writes', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/decisions/d1/status',
-      headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded', 'x-hansard-token': TOKEN },
+      headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded', 'x-threadkeep-token': TOKEN },
       payload: 'status=confirmed',
     });
     expect(res.statusCode).toBe(415);
@@ -69,7 +69,7 @@ describe('error responses on writes', () => {
 describe('stricter body handling', () => {
   it('rejects an array where a string is expected and text/plain posts', async () => {
     const { app, post } = await setup();
-    const auth = { 'x-hansard-token': TOKEN };
+    const auth = { 'x-threadkeep-token': TOKEN };
     expect((await post('d1', { status: ['dismissed'] }, auth)).statusCode).toBe(400);
     const plain = await app.inject({
       method: 'POST',
@@ -87,7 +87,7 @@ describe('write guard', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/decisions/d1/status',
-      headers: { host: 'evil.example:80', 'content-type': 'application/json', 'x-hansard-token': TOKEN },
+      headers: { host: 'evil.example:80', 'content-type': 'application/json', 'x-threadkeep-token': TOKEN },
       payload: JSON.stringify({ status: 'confirmed' }),
     });
     expect(res.statusCode).toBe(403);
@@ -100,7 +100,7 @@ describe('write guard', () => {
       expect(bare.statusCode, method).toBe(401);
     }
     for (const method of ['PUT', 'DELETE'] as const) {
-      const authed = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST, 'x-hansard-token': TOKEN } });
+      const authed = await app.inject({ method, url: '/api/decisions/d1/status', headers: { host: HOST, 'x-threadkeep-token': TOKEN } });
       expect(authed.statusCode, method).toBeGreaterThanOrEqual(400);
     }
   });

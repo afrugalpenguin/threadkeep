@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { HansardContext } from '../../config.js';
+import type { ThreadkeepContext } from '../../config.js';
 import { relativeWithin, toPosix } from '../../paths.js';
 import type { ArchiveFile, MirrorReport, SourceAdapter } from '../types.js';
 import { claudeCodeFixtures } from './fixtures.js';
@@ -9,7 +9,7 @@ import { parseClaudeCode } from './parse.js';
 
 const ID = 'claude-code';
 
-function root(ctx: HansardContext): string | null {
+function root(ctx: ThreadkeepContext): string | null {
   return ctx.sources[ID]?.root ?? null;
 }
 
@@ -26,7 +26,7 @@ function subdirs(dir: string, onFail?: () => void): string[] {
   }
 }
 
-function archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[] {
+function archiveFiles(ctx: ThreadkeepContext, onWarning?: (message: string) => void): ArchiveFile[] {
   const base = path.join(ctx.archiveRoot, 'raw', ID);
   const out: ArchiveFile[] = [];
   const warn = (rel: string) => () => onWarning?.(`${rel}: unreadable directory, skipped`);
@@ -50,7 +50,7 @@ function archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void
   return out.sort((a, b) => a.relPath.localeCompare(b.relPath));
 }
 
-function archiveFileFor(ctx: HansardContext, localPath: string): ArchiveFile | null {
+function archiveFileFor(ctx: ThreadkeepContext, localPath: string): ArchiveFile | null {
   const r = root(ctx);
   if (!r) return null;
   const rel = relativeWithin(r, localPath);

@@ -3,11 +3,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach } from 'vitest';
-import { loadContext, type HansardContext, type LoadContextOptions } from '../src/index.js';
+import { loadContext, type ThreadkeepContext, type LoadContextOptions } from '../src/index.js';
 
 const dirs: string[] = [];
 
-export function tempDir(prefix = 'hansard-test-'): string {
+export function tempDir(prefix = 'threadkeep-test-'): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   dirs.push(dir);
   return dir;
@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 export interface Machine {
-  ctx: HansardContext;
+  ctx: ThreadkeepContext;
   userHome: string;
   claudeRoot: string;
 }
@@ -27,7 +27,7 @@ export interface Machine {
 export function makeMachine(options: { archiveRoot?: string } = {}): Machine {
   const base = tempDir();
   const userHome = path.join(base, 'user');
-  const home = path.join(base, 'hansard-home');
+  const home = path.join(base, 'threadkeep-home');
   const claudeRoot = path.join(userHome, '.claude', 'projects');
   fs.mkdirSync(claudeRoot, { recursive: true });
   const loadOptions: LoadContextOptions = { home, userHome, env: {} };
@@ -56,6 +56,6 @@ export function sha256File(file: string): string {
   return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
 
-export function archiveSessionPath(ctx: HansardContext, sessionId: string, folder = FIXTURE_FOLDER): string {
+export function archiveSessionPath(ctx: ThreadkeepContext, sessionId: string, folder = FIXTURE_FOLDER): string {
   return path.join(ctx.archiveRoot, 'raw', 'claude-code', ctx.machineId, folder, `${sessionId}.jsonl`);
 }

@@ -20,7 +20,7 @@ interface SampleAdapter {
 
 export interface Guards {
   repoRoot: string;
-  // Directories that must never be written into, such as the real .claude and .hansard.
+  // Directories that must never be written into, such as the real .claude and .threadkeep.
   forbidden: string[];
 }
 
@@ -52,7 +52,7 @@ export function assertSafeOutDir(outDir: string, guards: Guards): string {
     throw new Error('refusing to write inside the repository working tree; choose a directory outside it');
   }
   if (guards.forbidden.some((dir) => within(realTarget(dir), target))) {
-    throw new Error('refusing to write inside a real .claude or .hansard directory; choose a different directory');
+    throw new Error('refusing to write inside a real .claude or .threadkeep directory; choose a different directory');
   }
   if (fs.existsSync(target) && (!fs.statSync(target).isDirectory() || fs.readdirSync(target).length > 0)) {
     throw new Error('refusing to write into a path that exists and is not an empty directory');
@@ -79,8 +79,8 @@ export function makeFixtures(outDir: string, adapters: SampleAdapter[], guards: 
 // plus any directory the environment redirects them to.
 export function forbiddenDirs(env: Record<string, string | undefined>, homedir: string): string[] {
   const homes = [homedir, env['USERPROFILE'], env['HOME']].filter((h): h is string => !!h);
-  const dirs = homes.flatMap((h) => [path.join(h, '.claude'), path.join(h, '.hansard')]);
-  for (const key of ['HANSARD_HOME', 'CLAUDE_CONFIG_DIR']) {
+  const dirs = homes.flatMap((h) => [path.join(h, '.claude'), path.join(h, '.threadkeep')]);
+  for (const key of ['THREADKEEP_HOME', 'CLAUDE_CONFIG_DIR']) {
     const value = env[key];
     if (value) dirs.push(value);
   }
@@ -106,8 +106,8 @@ async function main(): Promise<number> {
     const written = makeFixtures(outDir, core.adapters, { repoRoot, forbidden });
     for (const { files } of written) for (const file of files) process.stdout.write(`${file}\n`);
     process.stdout.write(
-      'next: point a claude-code source root at <dir>/claude-code in a scratch hansard home, then run\n' +
-        '  hansard ingest and hansard import claude-ai <dir>/claude-ai/export.zip with --home <scratch home>\n',
+      'next: point a claude-code source root at <dir>/claude-code in a scratch threadkeep home, then run\n' +
+        '  threadkeep ingest and threadkeep import claude-ai <dir>/claude-ai/export.zip with --home <scratch home>\n',
     );
     return 0;
   } catch (error) {

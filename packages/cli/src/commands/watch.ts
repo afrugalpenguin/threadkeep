@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { adapters, displayPath, ingestFile, safeMessage, type HansardContext } from 'threadkeep-core';
+import { adapters, displayPath, ingestFile, safeMessage, type ThreadkeepContext } from 'threadkeep-core';
 import { intFlag, parse, str } from '../args.js';
 import { usage, type Command } from '../types.js';
 
@@ -12,7 +12,7 @@ export const watchCommand: Command = async (args, env) => {
   const roots = adapters.filter((a) => a.kind === 'live').flatMap((a) => (ctx.sources[a.id] ? [ctx.sources[a.id]?.root as string] : []));
   if (roots.length === 0) throw usage('no live sources configured');
 
-  const owned = (ctx2: HansardContext, file: string) => adapters.some((a) => a.archiveFileFor?.(ctx2, file));
+  const owned = (ctx2: ThreadkeepContext, file: string) => adapters.some((a) => a.archiveFileFor?.(ctx2, file));
   const watcher = chokidar.watch(roots, {
     ignoreInitial: true,
     awaitWriteFinish: { stabilityThreshold: debounce, pollInterval: Math.max(20, Math.min(100, debounce)) },

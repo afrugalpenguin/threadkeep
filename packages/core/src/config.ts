@@ -8,7 +8,7 @@ export interface SourceConfig {
   root: string;
 }
 
-export interface HansardConfig {
+export interface ThreadkeepConfig {
   dbPath: string;
   archiveRoot: string;
   sources: Record<string, SourceConfig>;
@@ -19,7 +19,7 @@ export interface ExclusionsFile {
   sessionIds: string[];
 }
 
-export interface HansardContext {
+export interface ThreadkeepContext {
   home: string;
   userHome: string;
   env: Record<string, string | undefined>;
@@ -43,10 +43,10 @@ export interface LoadContextOptions {
   env?: Record<string, string | undefined>;
   // Base for "~" expansion and the default data dir. Injected by tests.
   userHome?: string;
-  overrides?: Partial<HansardConfig>;
+  overrides?: Partial<ThreadkeepConfig>;
 }
 
-export const DEFAULT_CONFIG: HansardConfig = {
+export const DEFAULT_CONFIG: ThreadkeepConfig = {
   dbPath: '<home>/history.db',
   archiveRoot: '<home>/archive',
   sources: { 'claude-code': { root: '~/.claude/projects' } },
@@ -84,10 +84,10 @@ function readJson<T>(file: string, what: string): T {
   }
 }
 
-export function loadContext(options: LoadContextOptions = {}): HansardContext {
+export function loadContext(options: LoadContextOptions = {}): ThreadkeepContext {
   const env = options.env ?? process.env;
   const userHome = options.userHome ?? os.homedir();
-  const home = path.resolve(options.home ?? env['HANSARD_HOME'] ?? path.join(userHome, '.hansard'));
+  const home = path.resolve(options.home ?? env['THREADKEEP_HOME'] ?? path.join(userHome, '.threadkeep'));
   mkdirPrivate(home);
 
   const configPath = path.join(home, 'config.json');
@@ -96,12 +96,12 @@ export function loadContext(options: LoadContextOptions = {}): HansardContext {
   const created: string[] = [];
 
   // "<home>" and "~" are stored literally so the file holds no absolute home path.
-  const defaults: HansardConfig = { ...DEFAULT_CONFIG };
+  const defaults: ThreadkeepConfig = { ...DEFAULT_CONFIG };
   if (writeJsonIfMissing(configPath, defaults)) created.push('<home>/config.json');
   if (writeJsonIfMissing(exclusionsPath, { projectGlobs: [], sessionIds: [] })) created.push('<home>/exclusions.json');
   if (writeJsonIfMissing(machinePath, { id: randomUUID(), label: null })) created.push('<home>/machine.json');
 
-  const config = { ...readJson<HansardConfig>(configPath, 'config.json'), ...options.overrides };
+  const config = { ...readJson<ThreadkeepConfig>(configPath, 'config.json'), ...options.overrides };
   const machine = readJson<{ id: string; label: string | null }>(machinePath, 'machine.json');
   if (typeof machine.id !== 'string' || machine.id.length === 0) throw new Error('machine.json has no id');
 
@@ -131,7 +131,7 @@ export function loadContext(options: LoadContextOptions = {}): HansardContext {
   };
 }
 
-export function readExclusions(ctx: HansardContext): ExclusionsFile {
+export function readExclusions(ctx: ThreadkeepContext): ExclusionsFile {
   const parsed = readJson<Partial<ExclusionsFile>>(ctx.exclusionsPath, 'exclusions.json');
   return {
     projectGlobs: Array.isArray(parsed.projectGlobs) ? parsed.projectGlobs.map(String) : [],
@@ -139,18 +139,18 @@ export function readExclusions(ctx: HansardContext): ExclusionsFile {
   };
 }
 
-export function writeExclusions(ctx: HansardContext, value: ExclusionsFile): void {
+export function writeExclusions(ctx: ThreadkeepContext, value: ExclusionsFile): void {
   fs.writeFileSync(ctx.exclusionsPath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-export function setMachineLabel(ctx: HansardContext, label: string | null): void {
+export function setMachineLabel(ctx: ThreadkeepContext, label: string | null): void {
   fs.writeFileSync(ctx.machinePath, `${JSON.stringify({ id: ctx.machineId, label }, null, 2)}\n`);
   ctx.machineLabel = label;
   writeMachineArchiveFile(ctx);
 }
 
 // Lets other machines sharing the archive show this machine's label.
-export function writeMachineArchiveFile(ctx: HansardContext): void {
+export function writeMachineArchiveFile(ctx: ThreadkeepContext): void {
   const dir = path.join(ctx.archiveRoot, 'machines');
   mkdirPrivate(dir);
   fs.writeFileSync(

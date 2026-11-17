@@ -1,4 +1,4 @@
-import type { HansardContext } from 'threadkeep-core';
+import type { ThreadkeepContext } from 'threadkeep-core';
 
 export interface Output {
   write(text: string): unknown;
@@ -15,7 +15,7 @@ export interface CommandEnv {
   signal?: AbortSignal;
   env: Record<string, string | undefined>;
   // Loads (and on first run creates) the data dir, printing where config was created.
-  context(home: string | undefined): HansardContext;
+  context(home: string | undefined): ThreadkeepContext;
 }
 
 export class ExitError extends Error {

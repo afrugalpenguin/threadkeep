@@ -1,14 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ingestAll, openDb, type HansardContext } from '../src/index.js';
+import { ingestAll, openDb, type ThreadkeepContext } from '../src/index.js';
 import { assistant } from '../src/adapters/claude-code/fixtures.js';
 import { FIXTURE_SESSIONS, copyFixtures } from './fixture-files.js';
 import { makeMachine } from './helpers.js';
 
 const TABLES = ['sessions', 'events', 'raw_records', 'events_fts', 'ingest_state'];
 
-function snapshot(ctx: HansardContext) {
+function snapshot(ctx: ThreadkeepContext) {
   const db = openDb(ctx.dbPath);
   try {
     const counts = Object.fromEntries(

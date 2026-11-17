@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import StreamArray from 'stream-json/streamers/StreamArray.js';
-import type { HansardContext } from '../../config.js';
+import type { ThreadkeepContext } from '../../config.js';
 import { toPosix } from '../../paths.js';
 import type { ArchiveFile, ParseResult, SourceAdapter } from '../types.js';
 import { claudeAiFixtures } from './fixtures.js';
@@ -10,7 +10,7 @@ import { CONVERSATIONS_ENTRY, openZipEntry } from './zip.js';
 
 const ID = 'claude-ai';
 
-export function archiveDir(ctx: HansardContext): string {
+export function archiveDir(ctx: ThreadkeepContext): string {
   return path.join(ctx.archiveRoot, 'raw', ID);
 }
 
@@ -30,7 +30,7 @@ export function readSidecar(zipPath: string): Sidecar | null {
   }
 }
 
-function archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[] {
+function archiveFiles(ctx: ThreadkeepContext, onWarning?: (message: string) => void): ArchiveFile[] {
   const dir = archiveDir(ctx);
   let names: string[];
   try {
@@ -72,7 +72,7 @@ export const claudeAiAdapter: SourceAdapter = {
   kind: 'import',
   describe: () => ({
     reads: 'claude.ai data export zips (conversations.json)',
-    localLocation: 'none, imported with: hansard import claude-ai <path>',
+    localLocation: 'none, imported with: threadkeep import claude-ai <path>',
     archiveLayout: 'raw/claude-ai/<sha256>.zip with a <sha256>.json sidecar',
   }),
   discover(ctx) {

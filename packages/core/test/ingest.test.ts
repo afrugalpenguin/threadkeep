@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BusyError, ingestAll, ingestFile, openDb, withLock, type HansardContext } from '../src/index.js';
+import { BusyError, ingestAll, ingestFile, openDb, withLock, type ThreadkeepContext } from '../src/index.js';
 import { claudeCodeAdapter } from '../src/adapters/claude-code/index.js';
 import { parseClaudeCode } from '../src/adapters/claude-code/parse.js';
 import { aiTitle, assistant, line, toolResultLine, userText } from '../src/adapters/claude-code/fixtures.js';
@@ -19,7 +19,7 @@ const READ_USE = assistant(b(2), [
   { type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/home/alice/projects/demo/a.txt' } },
 ]);
 
-const rows = (ctx: HansardContext, sql: string) => {
+const rows = (ctx: ThreadkeepContext, sql: string) => {
   const db = openDb(ctx.dbPath);
   try {
     return db.prepare(sql).all() as Record<string, unknown>[];
@@ -130,7 +130,7 @@ describe('ingest', () => {
     expect(JSON.parse(String(tool?.['files_touched']))).toEqual(['/home/alice/projects/demo/a.txt']);
   });
 
-  const toolRows = (ctx: HansardContext) =>
+  const toolRows = (ctx: ThreadkeepContext) =>
     rows(ctx, "select id, content, tool_name, tool_input, tool_output, files_touched from events order by id");
 
   it('merges a tool result that arrives in a later run, same as a one-shot ingest', async () => {
