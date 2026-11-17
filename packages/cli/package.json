@@ -1,7 +1,7 @@
 {
-  "name": "hansard",
+  "name": "threadkeep",
   "version": "0.1.0",
-  "description": "Hansard command line: ingest, search and browse AI conversation history",
+  "description": "Threadkeep command line: ingest, search and browse AI conversation history",
   "type": "module",
   "license": "MIT",
   "author": "afrugalpenguin",
@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "bin": {
-    "hansard": "dist/index.js"
+    "threadkeep": "dist/index.js"
   },
   "files": [
     "dist",
@@ -21,8 +21,8 @@
     "typecheck": "tsc -b ."
   },
   "dependencies": {
-    "@hansard/core": "workspace:*",
-    "@hansard/server": "workspace:*",
+    "threadkeep-core": "workspace:*",
+    "threadkeep-server": "workspace:*",
     "chokidar": "^4.0.3"
   },
   "devDependencies": {

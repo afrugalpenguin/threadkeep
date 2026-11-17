@@ -30,7 +30,7 @@ export function App() {
   if (locked) {
     return (
       <main class="locked">
-        <p>Open the link printed in your terminal by hansard ui, or run hansard ui --open.</p>
+        <p>Open the link printed in your terminal by threadkeep ui, or run threadkeep ui --open.</p>
       </main>
     );
   }
@@ -38,7 +38,7 @@ export function App() {
   return (
     <div class="shell">
       <nav class="topnav">
-        <strong class="brand">Hansard</strong>
+        <strong class="brand">Threadkeep</strong>
         {links.map((l) => (
           <a
             key={l.view}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { SearchHit } from '@hansard/core';
+import type { SearchHit } from 'threadkeep-core';
 import { api, pick } from '../api.js';
 import { segments } from '../lib/highlight.js';
 import type { Params } from '../lib/route.js';

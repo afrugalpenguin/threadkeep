@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 function temp(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hansard-fixtures-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'threadkeep-fixtures-test-'));
   dirs.push(dir);
   return dir;
 }
@@ -20,7 +20,7 @@ function temp(): string {
 const repoRoot = path.resolve(import.meta.dirname, '..');
 
 async function cli(base: string, ...argv: string[]) {
-  const env = { HANSARD_HOME: path.join(base, 'home'), HOME: path.join(base, 'user'), USERPROFILE: path.join(base, 'user') };
+  const env = { THREADKEEP_HOME: path.join(base, 'home'), HOME: path.join(base, 'user'), USERPROFILE: path.join(base, 'user') };
   let out = '';
   let err = '';
   const code = await run(argv, { stdout: { write: (s) => (out += s) }, stderr: { write: (s) => (err += s) } }, env);
@@ -79,8 +79,8 @@ describe('make-fixtures', () => {
     expect(() => assertSafeOutDir(path.join(repoRoot, 'out'), { repoRoot, forbidden: [] })).toThrow(/repository/);
     const fakeHome = path.join(base, 'user');
     fs.mkdirSync(path.join(fakeHome, '.claude'), { recursive: true });
-    for (const name of ['.claude', '.hansard']) {
-      expect(() => assertSafeOutDir(path.join(fakeHome, name, 'x'), { repoRoot, forbidden: [path.join(fakeHome, '.claude'), path.join(fakeHome, '.hansard')] })).toThrow(/refusing/);
+    for (const name of ['.claude', '.threadkeep']) {
+      expect(() => assertSafeOutDir(path.join(fakeHome, name, 'x'), { repoRoot, forbidden: [path.join(fakeHome, '.claude'), path.join(fakeHome, '.threadkeep')] })).toThrow(/refusing/);
     }
     const full = path.join(base, 'full');
     fs.mkdirSync(full);
@@ -92,14 +92,14 @@ describe('make-fixtures', () => {
 
 describe('guard path forms', () => {
   it('builds the forbidden list from homes and environment redirects', () => {
-    const dirs = forbiddenDirs({ USERPROFILE: path.join(path.sep, 'u'), HOME: path.join(path.sep, 'h'), HANSARD_HOME: path.join(path.sep, 'hh'), CLAUDE_CONFIG_DIR: path.join(path.sep, 'cc') }, path.join(path.sep, 'o'));
+    const dirs = forbiddenDirs({ USERPROFILE: path.join(path.sep, 'u'), HOME: path.join(path.sep, 'h'), THREADKEEP_HOME: path.join(path.sep, 'hh'), CLAUDE_CONFIG_DIR: path.join(path.sep, 'cc') }, path.join(path.sep, 'o'));
     expect(dirs).toEqual([
       path.join(path.sep, 'o', '.claude'),
-      path.join(path.sep, 'o', '.hansard'),
+      path.join(path.sep, 'o', '.threadkeep'),
       path.join(path.sep, 'u', '.claude'),
-      path.join(path.sep, 'u', '.hansard'),
+      path.join(path.sep, 'u', '.threadkeep'),
       path.join(path.sep, 'h', '.claude'),
-      path.join(path.sep, 'h', '.hansard'),
+      path.join(path.sep, 'h', '.threadkeep'),
       path.join(path.sep, 'hh'),
       path.join(path.sep, 'cc'),
     ]);

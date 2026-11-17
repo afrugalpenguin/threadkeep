@@ -9,7 +9,7 @@ import {
   readExclusions,
   rebuild,
   setMachineLabel,
-} from '@hansard/core';
+} from 'threadkeep-core';
 import { intFlag, parse, str } from '../args.js';
 import { jsonOut, shortId } from '../format.js';
 import { usage, type Command } from '../types.js';

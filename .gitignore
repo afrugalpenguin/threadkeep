@@ -11,7 +11,7 @@ local/
 uploads/
 exports/
 coverage/
-.hansard/
+.threadkeep/
 
 # build and tooling
 node_modules/

@@ -1,6 +1,6 @@
 # Adding an adapter
 
-An adapter teaches Hansard to read one source of conversation history.
+An adapter teaches Threadkeep to read one source of conversation history.
 
 ## The interface
 
@@ -10,7 +10,7 @@ An adapter teaches Hansard to read one source of conversation history.
 - `displayName`: human label.
 - `kind`: `live` reads files that change in place (appended chunks). `import` reads immutable archive files such as zips.
 - `describe()`: what it reads, the default local location and the archive layout.
-- `discover(ctx)`: the locations to check and whether each was found. This feeds `hansard sources`.
+- `discover(ctx)`: the locations to check and whether each was found. This feeds `threadkeep sources`.
 - `mirror(ctx, opts?)`: live only. Copies new bytes from the local source into the archive.
 - `archiveFileFor(ctx, localPath)`: live only. The archive file a local path mirrors to, or null if the adapter does not own it.
 - `archiveFiles(ctx, onWarning?)`: every archive file the adapter owns. `rebuild` replays these.
@@ -21,7 +21,7 @@ An adapter teaches Hansard to read one source of conversation history.
 
 ## Register it
 
-Add the adapter to the `adapters` array in `packages/core/src/adapters/registry.ts`. A live adapter also needs a default root in `DEFAULT_CONFIG` (`packages/core/src/config.ts`); existing `config.json` files are not updated, so users add the root by hand. An import adapter currently needs its own import entry point modelled on `import-claude-ai.ts`, plus a branch for it in `packages/cli/src/commands/simple.ts`, because `hansard import` only accepts `claude-ai` today.
+Add the adapter to the `adapters` array in `packages/core/src/adapters/registry.ts`. A live adapter also needs a default root in `DEFAULT_CONFIG` (`packages/core/src/config.ts`); existing `config.json` files are not updated, so users add the root by hand. An import adapter currently needs its own import entry point modelled on `import-claude-ai.ts`, plus a branch for it in `packages/cli/src/commands/simple.ts`, because `threadkeep import` only accepts `claude-ai` today.
 
 ## State and schema
 
@@ -35,7 +35,7 @@ The adapter owns its `ingest_state` keys. The key is `ArchiveFile.relPath`, rela
 4. Redaction coverage test: a planted secret never shows up in search, sessions or show output.
 5. Exclusion test: an excluded project or session disappears from every read path.
 6. `describe()` entry filled in accurately.
-7. `hansard sources` lists the adapter and reports `found` correctly.
+7. `threadkeep sources` lists the adapter and reports `found` correctly.
 8. Docs: mention the source in [docs/usage.md](docs/usage.md) and [docs/data.md](docs/data.md), and add a note here if it has quirks.
 
 ## Existing adapters

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ZipFile } from 'yazl';
-import { claudeAiFixtures } from '@hansard/core';
+import { claudeAiFixtures } from 'threadkeep-core';
 import { sandbox } from './helpers.js';
 
 function writeZip(file: string, entries: Record<string, string>): Promise<void> {

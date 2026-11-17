@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
-import { getAdapter } from '@hansard/core';
+import { getAdapter } from 'threadkeep-core';
 import { run } from '../src/run.js';
 
 const dirs: string[] = [];
@@ -23,13 +23,13 @@ export interface Sandbox {
 
 // Everything lives under one temp dir; the real home directory is never consulted.
 export function sandbox(): Sandbox {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'hansard-cli-test-'));
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'threadkeep-cli-test-'));
   dirs.push(base);
   const userHome = path.join(base, 'user');
-  const home = path.join(base, 'hansard-home');
+  const home = path.join(base, 'threadkeep-home');
   const claudeRoot = path.join(userHome, '.claude', 'projects');
   fs.mkdirSync(claudeRoot, { recursive: true });
-  const env = { HANSARD_HOME: home, HOME: userHome, USERPROFILE: userHome };
+  const env = { THREADKEEP_HOME: home, HOME: userHome, USERPROFILE: userHome };
   return {
     base,
     home,

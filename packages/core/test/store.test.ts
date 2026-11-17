@@ -20,9 +20,9 @@ describe('config', () => {
     expect(JSON.parse(fs.readFileSync(first.exclusionsPath, 'utf8'))).toEqual({ projectGlobs: [], sessionIds: [] });
   });
 
-  it('prefers HANSARD_HOME from the injected env', () => {
+  it('prefers THREADKEEP_HOME from the injected env', () => {
     const base = tempDir();
-    const ctx = loadContext({ env: { HANSARD_HOME: path.join(base, 'h') }, userHome: path.join(base, 'u') });
+    const ctx = loadContext({ env: { THREADKEEP_HOME: path.join(base, 'h') }, userHome: path.join(base, 'u') });
     expect(ctx.home).toBe(path.join(base, 'h'));
   });
 

@@ -21,7 +21,7 @@ export function openDb(file: string): Db {
   const current = schemaVersion(db);
   if (current > (migrations[migrations.length - 1]?.version ?? 0)) {
     db.close();
-    throw new Error(`database schema ${current} is newer than this hansard build`);
+    throw new Error(`database schema ${current} is newer than this threadkeep build`);
   }
   for (const migration of migrations) {
     if (migration.version <= current) continue;

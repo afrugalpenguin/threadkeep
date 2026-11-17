@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { withLock, loadContext } from '@hansard/core';
+import { withLock, loadContext } from 'threadkeep-core';
 import { sandbox, seed } from './helpers.js';
 
 describe('cli basics', () => {

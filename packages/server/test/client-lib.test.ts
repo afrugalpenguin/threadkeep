@@ -3,7 +3,7 @@ import { filesUpTo, firstLine, groupTurns, turnOfEvent } from '../src/client/lib
 import { segments } from '../src/client/lib/highlight.js';
 import { buildHash, parseHash } from '../src/client/lib/route.js';
 import { takeTokenFromHash } from '../src/client/lib/token.js';
-import { TOOL_OUTPUT_SEPARATOR as CORE_SEPARATOR } from '@hansard/core';
+import { TOOL_OUTPUT_SEPARATOR as CORE_SEPARATOR } from 'threadkeep-core';
 import { TOOL_OUTPUT_SEPARATOR } from '../src/shared/separator.js';
 import { effectiveSort, withValidSort, SEARCH_SORTS, SESSION_SORTS } from '../src/client/lib/sorts.js';
 import { MARK_CLOSE as C, MARK_OPEN as O } from '../src/shared/marks.js';

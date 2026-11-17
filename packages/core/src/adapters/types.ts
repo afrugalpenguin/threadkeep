@@ -1,4 +1,4 @@
-import type { HansardContext } from '../config.js';
+import type { ThreadkeepContext } from '../config.js';
 
 export interface ArchiveFile {
   machineId: string;
@@ -82,15 +82,15 @@ export interface SourceAdapter {
   displayName: string;
   kind: 'live' | 'import';
   describe(): { reads: string; localLocation: string; archiveLayout: string };
-  discover(ctx: HansardContext): { location: string; found: boolean; detail?: string }[];
-  mirror?(ctx: HansardContext, opts?: { file?: string }): MirrorReport;
+  discover(ctx: ThreadkeepContext): { location: string; found: boolean; detail?: string }[];
+  mirror?(ctx: ThreadkeepContext, opts?: { file?: string }): MirrorReport;
   // Archive file that a local source file mirrors to, or null when the adapter does not own that path.
-  archiveFileFor?(ctx: HansardContext, localPath: string): ArchiveFile | null;
-  archiveFiles(ctx: HansardContext, onWarning?: (message: string) => void): ArchiveFile[];
+  archiveFileFor?(ctx: ThreadkeepContext, localPath: string): ArchiveFile | null;
+  archiveFiles(ctx: ThreadkeepContext, onWarning?: (message: string) => void): ArchiveFile[];
   // Reason to skip an archive file (for example a sync-conflict copy), or null to ingest it.
   skipReason?(file: ArchiveFile): string | null;
   // Import adapters read an immutable archive file (for example a zip) instead of line chunks.
-  parseArchive?(file: ArchiveFile, ctx: HansardContext): AsyncIterable<ParseResult>;
-  parse(file: ArchiveFile, chunk: { text: string; startOffset: number }, ctx: HansardContext): ParseResult;
+  parseArchive?(file: ArchiveFile, ctx: ThreadkeepContext): AsyncIterable<ParseResult>;
+  parse(file: ArchiveFile, chunk: { text: string; startOffset: number }, ctx: ThreadkeepContext): ParseResult;
   fixtures: FixtureGenerator;
 }

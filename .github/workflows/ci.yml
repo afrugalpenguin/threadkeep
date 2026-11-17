@@ -39,11 +39,11 @@ jobs:
           ./gitleaks git --redact --no-banner .
       - name: write denylist from secret
         env:
-          DENYLIST: ${{ secrets.HANSARD_DENYLIST }}
+          DENYLIST: ${{ secrets.THREADKEEP_DENYLIST }}
         run: |
-          if [ -z "$DENYLIST" ]; then echo "HANSARD_DENYLIST secret is not set"; exit 1; fi
+          if [ -z "$DENYLIST" ]; then echo "THREADKEEP_DENYLIST secret is not set"; exit 1; fi
           printf '%s\n' "$DENYLIST" > "$RUNNER_TEMP/denylist.txt"
       - name: hygiene scan on full history
         env:
-          HANSARD_DENYLIST: ${{ runner.temp }}/denylist.txt
+          THREADKEEP_DENYLIST: ${{ runner.temp }}/denylist.txt
         run: node scripts/check-hygiene.mjs --history

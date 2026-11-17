@@ -11,7 +11,7 @@ const mode = (p: string): number => fs.statSync(p).mode & 0o777;
 describe.skipIf(!posix)('private data dir (POSIX)', () => {
   it('creates the home, archive, database dir and config files owner-only', async () => {
     const base = tempDir();
-    const home = path.join(base, 'a', 'b', 'hansard-home');
+    const home = path.join(base, 'a', 'b', 'threadkeep-home');
     const ctx = loadContext({ home, userHome: path.join(base, 'user'), env: {} });
     for (const dir of [path.join(base, 'a', 'b'), home]) expect(mode(dir) & 0o077, dir).toBe(0);
     for (const file of ['config.json', 'machine.json', 'exclusions.json']) expect(mode(path.join(home, file)), file).toBe(0o600);
@@ -26,7 +26,7 @@ describe.skipIf(!posix)('private data dir (POSIX)', () => {
 
   it('does not change the mode of an existing home', () => {
     const base = tempDir();
-    const home = path.join(base, 'hansard-home');
+    const home = path.join(base, 'threadkeep-home');
     fs.mkdirSync(home, { mode: 0o755 });
     fs.chmodSync(home, 0o755);
     loadContext({ home, userHome: path.join(base, 'user'), env: {} });

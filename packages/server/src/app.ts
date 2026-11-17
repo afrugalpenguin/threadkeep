@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AddressInfo } from 'node:net';
-import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from '@hansard/core';
+import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type ThreadkeepContext } from 'threadkeep-core';
 import { registerRoutes } from './routes.js';
 
 export interface AppOptions {
@@ -38,7 +38,7 @@ export const indexHtml = (): string =>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hansard</title>
+<title>Threadkeep</title>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -64,7 +64,7 @@ function securityHeaders(reply: FastifyReply): void {
   reply.header('cache-control', 'no-store');
 }
 
-export function createApp(ctx: HansardContext, options: AppOptions): FastifyInstance {
+export function createApp(ctx: ThreadkeepContext, options: AppOptions): FastifyInstance {
   // Only a plain hex string is acceptable as a token.
   if (!/^[0-9a-f]{32,}$/.test(options.token)) throw new Error('invalid token: expected at least 32 lowercase hex characters');
   const hostAllowed = (host: string | undefined): boolean => {
@@ -100,7 +100,7 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
     // unknown paths, any other method) needs the token. Matching the raw path means an encoded or
     // oddly cased variant of an open route is simply treated as needing the token.
     const open = readOnly && OPEN_ROUTES.has(request.url.split('?')[0] ?? '');
-    if (!open && !tokenMatches(options.token, request.headers['x-hansard-token'])) {
+    if (!open && !tokenMatches(options.token, request.headers['x-threadkeep-token'])) {
       return reply.code(readOnly || request.url.startsWith('/api/') ? 401 : 403).send({ error: 'missing or invalid token' });
     }
   });
@@ -136,6 +136,6 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
 
 declare module 'fastify' {
   interface FastifyInstance {
-    db: import('@hansard/core').Db;
+    db: import('threadkeep-core').Db;
   }
 }

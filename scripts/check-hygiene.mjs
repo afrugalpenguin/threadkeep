@@ -6,11 +6,11 @@
 //   --tracked  every tracked file (CI, local full check)
 //   --history  every line added anywhere in git history (before publishing)
 //
-// The denylist is read from HANSARD_DENYLIST or ~/.hansard/denylist.txt. A missing denylist
+// The denylist is read from THREADKEEP_DENYLIST or ~/.threadkeep/denylist.txt. A missing denylist
 // is a failure. Output lists file, line number and rule name only.
 //
 // Session ids that exist on this machine are also rejected. They are collected from the Claude Code
-// projects dir and the hansard archive, or from HANSARD_SESSION_ROOTS (a path-delimited list) when set.
+// projects dir and the threadkeep archive, or from THREADKEEP_SESSION_ROOTS (a path-delimited list) when set.
 // A root that exists but cannot be read is a failure.
 
 import { execFileSync } from 'node:child_process';
@@ -28,10 +28,10 @@ if (!['--staged', '--tracked', '--history'].includes(mode)) {
 const git = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 512 });
 
 function loadDenylist() {
-  const path = process.env.HANSARD_DENYLIST ?? join(homedir(), '.hansard', 'denylist.txt');
+  const path = process.env.THREADKEEP_DENYLIST ?? join(homedir(), '.threadkeep', 'denylist.txt');
   if (!existsSync(path)) {
     console.error('hygiene: denylist not found. Create it from denylist.example.txt at');
-    console.error('  ~/.hansard/denylist.txt (or set HANSARD_DENYLIST). Failing closed.');
+    console.error('  ~/.threadkeep/denylist.txt (or set THREADKEEP_DENYLIST). Failing closed.');
     process.exit(1);
   }
   return parseDenylist(readFileSync(path, 'utf8'));
@@ -40,7 +40,7 @@ function loadDenylist() {
 // Mirrors loadContext in packages/core: archiveRoot from config.json, "<home>" and "~" expanded.
 function defaultSessionRoots() {
   const userHome = homedir();
-  const home = resolve(process.env.HANSARD_HOME ?? join(userHome, '.hansard'));
+  const home = resolve(process.env.THREADKEEP_HOME ?? join(userHome, '.threadkeep'));
   let archiveRoot = '<home>/archive';
   const configPath = join(home, 'config.json');
   if (existsSync(configPath)) archiveRoot = JSON.parse(readFileSync(configPath, 'utf8')).archiveRoot ?? archiveRoot;
@@ -52,7 +52,7 @@ function defaultSessionRoots() {
 
 function loadSessionIds() {
   try {
-    const override = process.env.HANSARD_SESSION_ROOTS;
+    const override = process.env.THREADKEEP_SESSION_ROOTS;
     return collectSessionIds(override ? override.split(delimiter).filter(Boolean) : defaultSessionRoots());
   } catch {
     console.error('hygiene: could not read the session roots to collect real session ids. Failing closed.');

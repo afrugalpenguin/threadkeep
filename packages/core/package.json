@@ -1,7 +1,7 @@
 {
-  "name": "@hansard/core",
+  "name": "threadkeep-core",
   "version": "0.1.0",
-  "description": "Hansard core: local archive, ingest, redaction and search for AI conversation history",
+  "description": "Threadkeep core: local archive, ingest, redaction and search for AI conversation history",
   "type": "module",
   "license": "MIT",
   "author": "afrugalpenguin",

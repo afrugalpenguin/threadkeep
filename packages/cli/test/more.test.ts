@@ -92,7 +92,7 @@ describe('doctor', () => {
     expect(r.code).toBe(0);
     expect(r.out).toMatch(/^ok {4}database: <home>\/history\.db schema version 2$/m);
     expect(r.out).toMatch(/^ok {4}archive: <archive> reachable and writable$/m);
-    expect(r.out).toMatch(/^warn {2}hansard on PATH: not found$/m);
+    expect(r.out).toMatch(/^warn {2}threadkeep on PATH: not found$/m);
     expect(r.out).toMatch(/^warn {2}mcp server: not built yet$/m);
     expect(r.out).toMatch(/^ok {4}source claude-code: found$/m);
     expect(r.out).not.toContain(box.base);

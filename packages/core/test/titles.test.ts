@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { importClaudeAi, ingestAll, openDb, type HansardContext } from '../src/index.js';
+import { importClaudeAi, ingestAll, openDb, type ThreadkeepContext } from '../src/index.js';
 import { conversation, message, textBlock } from '../src/adapters/claude-ai/fixtures.js';
 import { userText } from '../src/adapters/claude-code/fixtures.js';
 import { makeMachine, tempDir, writeSession } from './helpers.js';
@@ -16,7 +16,7 @@ const secrets = {
 };
 const pad = (secret: string, at = 70) => `${'x'.repeat(at)} ${secret} tail`;
 
-const titles = (ctx: HansardContext) => {
+const titles = (ctx: ThreadkeepContext) => {
   const db = openDb(ctx.dbPath);
   try {
     return (db.prepare('select title from sessions').all() as { title: string }[]).map((r) => r.title);

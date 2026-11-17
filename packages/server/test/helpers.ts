@@ -1,4 +1,4 @@
-import { ingestAll, openDb } from '@hansard/core';
+import { ingestAll, openDb } from 'threadkeep-core';
 import { assistant, toolResultLine, userText } from '../../core/src/adapters/claude-code/fixtures.js';
 import { makeMachine, writeSession, type Machine } from '../../core/test/helpers.js';
 import { createApp, type AppOptions } from '../src/app.js';
@@ -8,7 +8,7 @@ export const S2 = 'eeeeeeee-2222-4222-8222-222222222222';
 export const TOKEN = 'a'.repeat(48);
 export const PORT = 4477;
 export const HOST = `127.0.0.1:${PORT}`;
-export const AUTH = { host: HOST, 'x-hansard-token': TOKEN };
+export const AUTH = { host: HOST, 'x-threadkeep-token': TOKEN };
 
 // Assembled at runtime so no scanner sees a literal token in this file.
 export const SECRET = ['AKIA', 'A1'.repeat(8)].join('');

@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 // One-command install from a checkout: installs dependencies from the lockfile, builds every
-// package and puts a `hansard` launcher in npm's global bin directory, which npm already keeps on PATH.
+// package and puts a `threadkeep` launcher in npm's global bin directory, which npm already keeps on PATH.
 //
 //   node scripts/install.mjs            install, build and write the launcher
 //   node scripts/install.mjs --no-link  install and build only
 //
 // The launcher only runs packages/cli/dist/index.js from this checkout; delete it to uninstall.
-// An existing `hansard` launcher that this script did not write is never replaced.
+// An existing `threadkeep` launcher that this script did not write is never replaced.
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const SHIM_MARKER = 'hansard launcher written by scripts/install.mjs';
+export const SHIM_MARKER = 'threadkeep launcher written by scripts/install.mjs';
 
 export function shimFiles(cliEntry, platform) {
   const sh = `#!/bin/sh\n# ${SHIM_MARKER}\nexec node "${cliEntry}" "$@"\n`;
-  if (platform !== 'win32') return { hansard: sh };
+  if (platform !== 'win32') return { threadkeep: sh };
   // Git Bash on Windows uses the sh launcher; cmd and PowerShell use the .cmd one.
-  return { 'hansard.cmd': `@echo off\r\nrem ${SHIM_MARKER}\r\nnode "${cliEntry}" %*\r\n`, hansard: sh };
+  return { 'threadkeep.cmd': `@echo off\r\nrem ${SHIM_MARKER}\r\nnode "${cliEntry}" %*\r\n`, threadkeep: sh };
 }
 
 export function writeShims(binDir, cliEntry, platform = process.platform) {
@@ -82,7 +82,7 @@ function main() {
     for (const name of refused) console.error(`install: ${path.join(bin, name)} exists and was not written by this script, left alone`);
     process.exit(1);
   }
-  console.log('install: done. Next: hansard ingest');
+  console.log('install: done. Next: threadkeep ingest');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

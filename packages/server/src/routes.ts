@@ -6,10 +6,10 @@ import {
   listSessions,
   search,
   setDecisionStatus,
-  type HansardContext,
+  type ThreadkeepContext,
   type ListSessionsOptions,
   type SearchOptions,
-} from '@hansard/core';
+} from 'threadkeep-core';
 import { MARK_CLOSE, MARK_OPEN } from './shared/marks.js';
 
 type Query = Record<string, string | number | boolean | undefined>;
@@ -24,7 +24,7 @@ function defined<T extends object>(source: Query, keys: readonly string[]): Part
 const text = { type: 'string', maxLength: 500 } as const;
 const filters = { source: text, project: text, since: text, machine: text } as const;
 
-export function registerRoutes(app: FastifyInstance, ctx: HansardContext): void {
+export function registerRoutes(app: FastifyInstance, ctx: ThreadkeepContext): void {
   app.get(
     '/api/sessions',
     {

@@ -17,7 +17,7 @@ import {
   rebuild,
   search,
   writeExclusions,
-  type HansardContext,
+  type ThreadkeepContext,
 } from '../src/index.js';
 import { aiTitle, assistant, toolResultLine, userText, FIXTURE_PROJECT_WINDOWS } from '../src/adapters/claude-code/fixtures.js';
 import { makeMachine, tempDir, writeSession, type Machine } from './helpers.js';
@@ -53,7 +53,7 @@ async function seeded(): Promise<Machine> {
   return m;
 }
 
-const withDb = async <T>(ctx: HansardContext, fn: (db: ReturnType<typeof openDb>) => T): Promise<T> => {
+const withDb = async <T>(ctx: ThreadkeepContext, fn: (db: ReturnType<typeof openDb>) => T): Promise<T> => {
   const db = openDb(ctx.dbPath);
   try {
     return fn(db);
@@ -275,7 +275,7 @@ describe('exclusions', () => {
 });
 
 describe('multi machine and rebuild', () => {
-  const ids = (ctx: HansardContext) =>
+  const ids = (ctx: ThreadkeepContext) =>
     withDb(ctx, (db) => ({
       events: (db.prepare('select id from events order by id').all() as { id: string }[]).map((r) => r.id),
       sessions: (db.prepare('select id from sessions order by id').all() as { id: string }[]).map((r) => r.id),

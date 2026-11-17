@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { applyExclusions, openDb } from '@hansard/core';
+import { applyExclusions, openDb } from 'threadkeep-core';
 import { MARK_CLOSE, MARK_OPEN } from '../src/shared/marks.js';
-import { ingestAll } from '@hansard/core';
+import { ingestAll } from 'threadkeep-core';
 import { userText } from '../../core/src/adapters/claude-code/fixtures.js';
 import { writeSession } from '../../core/test/helpers.js';
 import { AUTH, HOST, S1, S2, SECRET, seededApp } from './helpers.js';

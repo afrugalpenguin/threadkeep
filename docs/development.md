@@ -7,13 +7,13 @@ For contributors: read this before your first change to set up the hooks, run th
 You need Node 22 or newer, git and pnpm. Node 22 and 24 ship pnpm through corepack, so `corepack pnpm --version` working is enough; otherwise, and on Node 25 and later which no longer ship corepack, run `corepack enable` (where corepack exists) or `npm install -g pnpm`. Then:
 
 ```sh
-git clone https://github.com/afrugalpenguin/hansard.git
-cd hansard
+git clone https://github.com/afrugalpenguin/threadkeep.git
+cd threadkeep
 git config core.hooksPath .git/hooks   # only if your global git config sets core.hooksPath
 corepack pnpm install
 ```
 
-`node scripts/install.mjs` does the install and the build in one go and writes the `hansard` launcher (see [usage.md](usage.md#how-do-i-install-upgrade-or-remove-it)); `--no-link` skips the launcher.
+`node scripts/install.mjs` does the install and the build in one go and writes the `threadkeep` launcher (see [usage.md](usage.md#how-do-i-install-upgrade-or-remove-it)); `--no-link` skips the launcher.
 
 ## Which commands are there?
 
@@ -46,7 +46,7 @@ The root `build` script runs `pnpm -r build`, which calls `pnpm` by name. If pnp
 Hooks run through lefthook. `pnpm install` runs lefthook's install step, which writes the hooks into whatever `core.hooksPath` points at. If your global git config sets `core.hooksPath`, point this repository at its own hooks first with `git config core.hooksPath .git/hooks`, otherwise lefthook overwrites your global hooks; then run `corepack pnpm exec lefthook install`. Every commit runs:
 
 - **gitleaks** on the staged changes. Install it first (`winget install Gitleaks.Gitleaks`, `brew install gitleaks`, or a release binary).
-- **hygiene** on the staged lines. It rejects absolute home paths, email addresses, em and en dashes, any entry in your denylist, any path into a Claude Code projects directory, and any session id that exists on your machine (collected from `~/.claude/projects` and the Hansard archive). It fails closed: a missing denylist or an unreadable session directory blocks the commit. Copy `denylist.example.txt` to `~/.hansard/denylist.txt` and add your own name, usernames, hostnames and employer. Details and fixes are in [privacy.md](privacy.md#what-does-the-hygiene-check-block).
+- **hygiene** on the staged lines. It rejects absolute home paths, email addresses, em and en dashes, any entry in your denylist, any path into a Claude Code projects directory, and any session id that exists on your machine (collected from `~/.claude/projects` and the Threadkeep archive). It fails closed: a missing denylist or an unreadable session directory blocks the commit. Copy `denylist.example.txt` to `~/.threadkeep/denylist.txt` and add your own name, usernames, hostnames and employer. Details and fixes are in [privacy.md](privacy.md#what-does-the-hygiene-check-block).
 - the commit message check (`scripts/check-commit-msg.mjs`): `type(scope): description` with a type from `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf` and `style`, subject at most 72 characters, and no em or en dashes anywhere in the message.
 
 CI runs typecheck, build, `pack:check` and the tests on Node 22, and gitleaks and the hygiene check over the full history.

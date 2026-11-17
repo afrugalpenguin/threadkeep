@@ -1,4 +1,4 @@
-import { basename, type MachineInfo } from '@hansard/core';
+import { basename, type MachineInfo } from 'threadkeep-core';
 
 export const shortId = (id: string): string => id.slice(0, 8);
 

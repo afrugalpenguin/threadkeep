@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
-import { UsageError, type HansardContext } from '@hansard/core';
+import { UsageError, type ThreadkeepContext } from 'threadkeep-core';
 import { createApp } from './app.js';
 
 export { createApp, type AppOptions } from './app.js';
@@ -30,7 +30,7 @@ export const TOKEN_FORMAT = /^[0-9a-f]{32,}$/;
 
 export const defaultPublicDir = (): string => fileURLToPath(new URL('./public/', import.meta.url));
 
-export async function startServer(ctx: HansardContext, options: StartOptions): Promise<RunningServer> {
+export async function startServer(ctx: ThreadkeepContext, options: StartOptions): Promise<RunningServer> {
   const log = options.log ?? (() => {});
   const publicDir = options.publicDir ?? defaultPublicDir();
   if (!fs.existsSync(path.join(publicDir, 'app.js'))) log('warning: client bundle missing, run pnpm build');

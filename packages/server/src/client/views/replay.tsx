@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { DecisionRow, ShownEvent, ShownSession } from '@hansard/core';
+import type { DecisionRow, ShownEvent, ShownSession } from 'threadkeep-core';
 import { api } from '../api.js';
 import { buildHash, type Params } from '../lib/route.js';
 import { navigate } from '../lib/nav.js';

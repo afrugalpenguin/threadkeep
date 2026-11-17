@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { displayPath, listSources, machineSummary, openDb, schemaVersion, type HansardContext } from '@hansard/core';
+import { displayPath, listSources, machineSummary, openDb, schemaVersion, type ThreadkeepContext } from 'threadkeep-core';
 import { parse, str } from '../args.js';
 import { shortId } from '../format.js';
 import { usage, type Command } from '../types.js';
@@ -48,12 +48,12 @@ function humanBytes(n: number): string {
 }
 
 function onPath(env: Record<string, string | undefined>): boolean {
-  const names = process.platform === 'win32' ? ['hansard.cmd', 'hansard.exe', 'hansard.ps1', 'hansard'] : ['hansard'];
+  const names = process.platform === 'win32' ? ['threadkeep.cmd', 'threadkeep.exe', 'threadkeep.ps1', 'threadkeep'] : ['threadkeep'];
   const dirs = (env['PATH'] ?? env['Path'] ?? '').split(path.delimiter).filter(Boolean);
   return dirs.some((dir) => names.some((n) => fs.existsSync(path.join(dir, n))));
 }
 
-export function runChecks(ctx: HansardContext, env: Record<string, string | undefined>): Check[] {
+export function runChecks(ctx: ThreadkeepContext, env: Record<string, string | undefined>): Check[] {
   const checks: Check[] = [];
   const add = (level: Level, name: string, detail: string) => checks.push({ level, name, detail });
 
@@ -127,7 +127,7 @@ export function runChecks(ctx: HansardContext, env: Record<string, string | unde
   if (writable(path.dirname(ctx.hooksLogPath))) add('ok', 'hooks log', displayPath(ctx, ctx.hooksLogPath));
   else add('fail', 'hooks log', 'not writable');
 
-  add(onPath(env) ? 'ok' : 'warn', 'hansard on PATH', onPath(env) ? 'found' : 'not found');
+  add(onPath(env) ? 'ok' : 'warn', 'threadkeep on PATH', onPath(env) ? 'found' : 'not found');
   add('warn', 'mcp server', 'not built yet');
   return checks;
 }

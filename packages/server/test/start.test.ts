@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { UsageError } from '@hansard/core';
+import { UsageError } from 'threadkeep-core';
 import { startServer } from '../src/index.js';
 import { makeMachine } from '../../core/test/helpers.js';
 
@@ -14,7 +14,7 @@ describe('startServer', () => {
       expect(token).toBeTruthy();
       expect(server.openUrl.startsWith(server.url)).toBe(true);
       expect((await fetch(`${server.url}api/sessions`)).status).toBe(401);
-      const res = await fetch(`${server.url}api/sessions`, { headers: { 'x-hansard-token': token } });
+      const res = await fetch(`${server.url}api/sessions`, { headers: { 'x-threadkeep-token': token } });
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual([]);
       const page = await (await fetch(server.url)).text();
@@ -32,7 +32,7 @@ describe('startServer', () => {
     const server = await startServer(ctx, { port: 0, token: custom, log: () => {} });
     try {
       expect(server.openUrl).toBe(`${server.url}#token=${custom}`);
-      expect((await fetch(`${server.url}api/sessions`, { headers: { 'x-hansard-token': custom } })).status).toBe(200);
+      expect((await fetch(`${server.url}api/sessions`, { headers: { 'x-threadkeep-token': custom } })).status).toBe(200);
     } finally {
       await server.close();
     }

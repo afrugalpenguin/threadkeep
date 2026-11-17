@@ -7,13 +7,13 @@ import {
   loadContext,
   safeMessage,
   type PathRoots,
-} from '@hansard/core';
+} from 'threadkeep-core';
 import { commands } from './commands.js';
 import { ExitError, type CommandEnv, type Io } from './types.js';
 
 export type { Command, CommandEnv, Io, Output } from './types.js';
 
-export const HELP = `usage: hansard <command> [options]
+export const HELP = `usage: threadkeep <command> [options]
 
 commands:
   ingest [path]       mirror local sources into the archive and ingest them
@@ -29,7 +29,7 @@ commands:
   ui                  serve the local web ui (--port, --open)
   import claude-ai <path...>  import claude.ai export zips, a directory or a manifest
 
-every command accepts --home <dir> (default: HANSARD_HOME, else ~/.hansard)
+every command accepts --home <dir> (default: THREADKEEP_HOME, else ~/.threadkeep)
 exit codes: 0 ok, 1 error or not found, 2 usage, 3 busy
 `;
 
@@ -55,7 +55,7 @@ export async function run(
     return 2;
   }
   // Roots we can see so far, used to keep absolute paths out of error output even if loading the context failed.
-  let known: PathRoots = { userHome: userHomeFrom(env), home: env['HANSARD_HOME'] };
+  let known: PathRoots = { userHome: userHomeFrom(env), home: env['THREADKEEP_HOME'] };
   const commandEnv: CommandEnv = {
     io,
     env,
@@ -80,7 +80,7 @@ export async function run(
       return error.code;
     }
     if (error instanceof BusyError) {
-      io.stderr.write('error: busy, another hansard run holds the ingest lock\n');
+      io.stderr.write('error: busy, another threadkeep run holds the ingest lock\n');
       return 3;
     }
     if (error instanceof UsageError) {

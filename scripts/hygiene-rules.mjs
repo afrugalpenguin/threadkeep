@@ -97,5 +97,5 @@ export const requiredIgnorePatterns = [
   'uploads/',
   'exports/',
   'coverage/',
-  '.hansard/',
+  '.threadkeep/',
 ];

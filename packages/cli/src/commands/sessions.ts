@@ -1,4 +1,4 @@
-import { listSessions, machineSummary, openDb, type ListSessionsOptions } from '@hansard/core';
+import { listSessions, machineSummary, openDb, type ListSessionsOptions } from 'threadkeep-core';
 import { intFlag, oneOf, parse, str } from '../args.js';
 import { formatTime, jsonOut, machineName, oneLine, projectName, shortId } from '../format.js';
 import { usage, type Command } from '../types.js';

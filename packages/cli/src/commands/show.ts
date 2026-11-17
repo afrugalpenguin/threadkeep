@@ -1,4 +1,4 @@
-import { getSession, openDb } from '@hansard/core';
+import { getSession, openDb } from 'threadkeep-core';
 import { parse, str } from '../args.js';
 import { formatTime, jsonOut, oneLine, projectName } from '../format.js';
 import { usage, type Command } from '../types.js';
