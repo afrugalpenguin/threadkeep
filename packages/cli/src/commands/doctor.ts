@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { displayPath, listSources, machineSummary, openDb, schemaVersion, type HansardContext } from '@hansard/core';
+import { displayPath, listSources, machineSummary, openDb, schemaVersion, type HansardContext } from 'threadkeep-core';
 import { parse, str } from '../args.js';
 import { shortId } from '../format.js';
 import { usage, type Command } from '../types.js';

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { ingestAll, ingestFile, type FileStatus, type IngestResult } from '@hansard/core';
+import { ingestAll, ingestFile, type FileStatus, type IngestResult } from 'threadkeep-core';
 import { intFlag, parse, str } from '../args.js';
 import { usage, type Command } from '../types.js';
 

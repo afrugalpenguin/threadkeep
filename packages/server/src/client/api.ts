@@ -1,4 +1,4 @@
-import type { DecisionRow, Facets, SearchHit, SessionRow, ShownSession } from '@hansard/core';
+import type { DecisionRow, Facets, SearchHit, SessionRow, ShownSession } from 'threadkeep-core';
 
 import { clearToken, currentToken } from './auth.js';
 

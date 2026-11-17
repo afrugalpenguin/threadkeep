@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { AddressInfo } from 'node:net';
-import { UsageError, type HansardContext } from '@hansard/core';
+import { UsageError, type HansardContext } from 'threadkeep-core';
 import { createApp } from './app.js';
 
 export { createApp, type AppOptions } from './app.js';

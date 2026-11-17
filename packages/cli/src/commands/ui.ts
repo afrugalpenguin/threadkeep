@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { displayPath } from '@hansard/core';
+import { displayPath } from 'threadkeep-core';
 import { intFlag, parse, str } from '../args.js';
 import { ExitError, usage, type Command } from '../types.js';
 import { UI_TOKEN_PROBLEM, readUiToken } from '../ui-token.js';
@@ -59,7 +59,7 @@ export const uiCommand: Command = async (args, env) => {
     throw new ExitError(UI_TOKEN_PROBLEM, 1);
   }
   // Lazy so that other commands never load the web server.
-  const { startServer } = await import('@hansard/server');
+  const { startServer } = await import('threadkeep-server');
   let server;
   try {
     server = await startServer(ctx, { port, ...(token ? { token } : {}), log: (line) => env.io.stderr.write(`${line}\n`) });

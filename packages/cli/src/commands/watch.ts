@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { adapters, displayPath, ingestFile, safeMessage, type HansardContext } from '@hansard/core';
+import { adapters, displayPath, ingestFile, safeMessage, type HansardContext } from 'threadkeep-core';
 import { intFlag, parse, str } from '../args.js';
 import { usage, type Command } from '../types.js';
 

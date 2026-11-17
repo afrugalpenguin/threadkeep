@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AddressInfo } from 'node:net';
-import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from '@hansard/core';
+import { AmbiguousError, NotFoundError, UsageError, openDb, safeMessage, type HansardContext } from 'threadkeep-core';
 import { registerRoutes } from './routes.js';
 
 export interface AppOptions {
@@ -136,6 +136,6 @@ export function createApp(ctx: HansardContext, options: AppOptions): FastifyInst
 
 declare module 'fastify' {
   interface FastifyInstance {
-    db: import('@hansard/core').Db;
+    db: import('threadkeep-core').Db;
   }
 }

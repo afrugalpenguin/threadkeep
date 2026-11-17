@@ -9,7 +9,7 @@ import {
   type HansardContext,
   type ListSessionsOptions,
   type SearchOptions,
-} from '@hansard/core';
+} from 'threadkeep-core';
 import { MARK_CLOSE, MARK_OPEN } from './shared/marks.js';
 
 type Query = Record<string, string | number | boolean | undefined>;

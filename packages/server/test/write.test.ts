@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { applyExclusions, openDb } from '@hansard/core';
+import { applyExclusions, openDb } from 'threadkeep-core';
 import { HOST, S2, TOKEN, seededApp } from './helpers.js';
 
 const apps: { close(): Promise<unknown> }[] = [];

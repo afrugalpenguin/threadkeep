@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import type { HansardContext } from '@hansard/core';
+import type { HansardContext } from 'threadkeep-core';
 
 const FORMAT = /^[0-9a-f]{32,}$/;
 

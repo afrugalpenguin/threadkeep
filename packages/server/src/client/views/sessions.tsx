@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { SessionRow } from '@hansard/core';
+import type { SessionRow } from 'threadkeep-core';
 import { api, pick } from '../api.js';
 import { buildHash, type Params } from '../lib/route.js';
 import { navigate } from '../lib/nav.js';

@@ -7,7 +7,7 @@ import {
   loadContext,
   safeMessage,
   type PathRoots,
-} from '@hansard/core';
+} from 'threadkeep-core';
 import { commands } from './commands.js';
 import { ExitError, type CommandEnv, type Io } from './types.js';
 

@@ -1,4 +1,4 @@
-import { machineSummary, openDb, search, type SearchOptions } from '@hansard/core';
+import { machineSummary, openDb, search, type SearchOptions } from 'threadkeep-core';
 import { intFlag, oneOf, parse, str } from '../args.js';
 import { formatTime, jsonOut, oneLine, projectName, shortId } from '../format.js';
 import { usage, type Command } from '../types.js';

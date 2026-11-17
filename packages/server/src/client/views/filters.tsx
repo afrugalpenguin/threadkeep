@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { Facets } from '@hansard/core';
+import type { Facets } from 'threadkeep-core';
 import { api } from '../api.js';
 import type { Params } from '../lib/route.js';
 import { SEARCH_SORTS, SESSION_SORTS, effectiveSort } from '../lib/sorts.js';

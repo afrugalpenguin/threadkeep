@@ -1,4 +1,4 @@
-import type { HansardContext } from '@hansard/core';
+import type { HansardContext } from 'threadkeep-core';
 
 export interface Output {
   write(text: string): unknown;

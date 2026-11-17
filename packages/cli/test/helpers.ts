@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
-import { getAdapter } from '@hansard/core';
+import { getAdapter } from 'threadkeep-core';
 import { run } from '../src/run.js';
 
 const dirs: string[] = [];

@@ -1,4 +1,4 @@
-import { ingestAll, openDb } from '@hansard/core';
+import { ingestAll, openDb } from 'threadkeep-core';
 import { assistant, toolResultLine, userText } from '../../core/src/adapters/claude-code/fixtures.js';
 import { makeMachine, writeSession, type Machine } from '../../core/test/helpers.js';
 import { createApp, type AppOptions } from '../src/app.js';

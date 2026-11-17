@@ -1,7 +1,7 @@
 {
-  "name": "@hansard/server",
+  "name": "threadkeep-server",
   "version": "0.1.0",
-  "description": "Hansard local web UI: browse, search and replay AI conversation history",
+  "description": "Threadkeep local web UI: browse, search and replay AI conversation history",
   "type": "module",
   "license": "MIT",
   "author": "afrugalpenguin",
@@ -26,7 +26,7 @@
     "typecheck": "tsc -b . && tsc -p tsconfig.client.json"
   },
   "dependencies": {
-    "@hansard/core": "workspace:*",
+    "threadkeep-core": "workspace:*",
     "fastify": "^5.4.0"
   },
   "devDependencies": {
