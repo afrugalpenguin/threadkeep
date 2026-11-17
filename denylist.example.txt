@@ -1,4 +1,4 @@
-# Copy to ~/.hansard/denylist.txt and replace with your own entries.
+# Copy to ~/.threadkeep/denylist.txt and replace with your own entries.
 # One entry per line, matched case-insensitively as a substring.
 # Lines starting with # and blank lines are ignored.
 example-person-name

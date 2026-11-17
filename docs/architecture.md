@@ -8,9 +8,9 @@ A pnpm monorepo with three packages:
 
 | package | holds |
 | --- | --- |
-| `packages/core` (`@hansard/core`) | config and data directory, source adapters, archive mirror, ingest, the SQLite store and migrations, redaction, exclusions and queries |
-| `packages/cli` (`hansard`) | the `hansard` command: argument parsing and output for each command, nothing else |
-| `packages/server` (`@hansard/server`) | the local web UI behind `hansard ui` (outside v0.1) |
+| `packages/core` (`threadkeep-core`) | config and data directory, source adapters, archive mirror, ingest, the SQLite store and migrations, redaction, exclusions and queries |
+| `packages/cli` (`threadkeep`) | the `threadkeep` command: argument parsing and output for each command, nothing else |
+| `packages/server` (`threadkeep-server`) | the local web UI behind `threadkeep ui` (outside v0.1) |
 
 `scripts/` holds the installer, the privacy hygiene check, the commit message check and packaging checks. `tests/` holds repository level tests and the synthetic fixtures; each package also has its own `test/` folder. To add a source other than Claude Code, see [ADAPTERS.md](../ADAPTERS.md).
 
@@ -31,7 +31,7 @@ The schema as shipped (migrations in `packages/core/src/store/migrations`):
 | --- | --- |
 | `sessions` | one row per session: id, project directory, `started_at`, `ended_at`, `event_count`, title, and an `excluded` flag |
 | `events` | one row per text block, thinking block or tool call, with role (`user`, `assistant`, `tool`, `system`), timestamp and text; a tool call's result is merged into its row |
-| `raw_records` | every line of every session file as written, including lines Hansard does not index, so nothing is lost; keyed by source, archive location and byte offset |
+| `raw_records` | every line of every session file as written, including lines Threadkeep does not index, so nothing is lost; keyed by source, archive location and byte offset |
 | `events_fts` | the FTS5 full text index over event text |
 | `ingest_state` | how far each archive file has been read, which is what makes ingest incremental |
 
