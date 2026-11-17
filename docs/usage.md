@@ -148,6 +148,15 @@ source: claude-code  project: demo  events: 5
 
 Lines that Claude Code generated itself (caveats, task notifications, hook output) are shown with the `system` role rather than `user`.
 
+## `threadkeep import claude-ai <path...>`
+
+Imports claude.ai conversations from a data export. Request the export from your claude.ai settings; you get a zip. Pass the zip, a directory of zips, or the export's manifest. `--wait <ms>` sets how long to wait if another threadkeep command holds the lock.
+
+- Each zip is fully parsed before anything is archived, so a broken export never reaches the archive.
+- Importing the same zip again does nothing. A newer export adds new conversations and updates changed ones; nothing is deleted.
+- Only conversations are imported. Other parts of the export (projects, memories) are skipped with a note.
+- Imported chats show up in `search`, `sessions` and `show` alongside Claude Code sessions; filter them with `--source claude-ai`.
+
 ## How do date ranges work?
 
 `--since` and `--until` take either form:
@@ -174,7 +183,7 @@ It also warns `mcp server: not built yet`; that is expected in v0.1 (see [roadma
 
 ## Other commands
 
-These exist but are not part of the v0.1 core. The last three are outside v0.1 entirely (see [roadmap.md](roadmap.md)).
+These exist but are not part of the v0.1 core. The last two are outside v0.1 entirely (see [roadmap.md](roadmap.md)).
 
 | command | what it does |
 | --- | --- |
@@ -187,4 +196,3 @@ These exist but are not part of the v0.1 core. The last three are outside v0.1 e
 | `threadkeep machine set-label <label>` | name this machine in listings and in `--machine` |
 | `threadkeep watch [--debounce <ms>]` | ingest each session file when it changes (default debounce 500 ms) |
 | `threadkeep ui [--port <n>] [--open]` | serve the local web UI on 127.0.0.1 |
-| `threadkeep import claude-ai <path...> [--wait <ms>]` | import claude.ai export zips, a directory of them or a manifest |

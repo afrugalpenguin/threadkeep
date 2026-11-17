@@ -1,10 +1,11 @@
 # Threadkeep
 
-Searchable, replayable history of your Claude Code sessions, kept outside the repo.
+Threadkeep keeps one local, searchable history of your Claude Code sessions and claude.ai chats, so the planning and the code it led to are in one place.
 
-- Claude Code prunes sessions older than 30 days, and Threadkeep keeps a copy.
-- You forget what you did last week, and why. Threadkeep finds it again.
-- grep over raw JSONL doesn't cut it. Threadkeep gives you ranked search, filters and a readable replay.
+- **One search across both.** Ranked full-text search, project and date filters, and a readable replay of any session or chat.
+- **Claude Code sessions, kept.** `threadkeep ingest` copies the JSONL Claude Code writes under `~/.claude/projects` into an archive of its own, so sessions survive Claude Code's cleanup (30 days by default), a reinstall or a new machine.
+- **claude.ai chats, imported.** `threadkeep import claude-ai` reads the zip from a claude.ai data export. Import a newer export any time; it adds and updates, and never deletes.
+- **Local only.** No account and no network. Common secret shapes are redacted from search and output on a best-effort basis; the archive keeps the original text, so protect it like the sessions themselves. See [privacy](docs/privacy.md).
 
 ## Quick start
 
@@ -17,7 +18,9 @@ git clone https://github.com/afrugalpenguin/threadkeep.git; cd threadkeep
 node scripts/install.mjs
 # 4. Copy and index your sessions; rerun any time, it only reads what is new
 threadkeep ingest
-# 5. Search them; it worked if you get hits shaped like the block below
+# 5. Optional: import a claude.ai data export zip (request one from your claude.ai settings)
+threadkeep import claude-ai ~/Downloads/data-export.zip
+# 6. Search everything; it worked if you get hits shaped like the block below
 threadkeep search "sqlite"
 ```
 
@@ -33,6 +36,7 @@ threadkeep search "sqlite"
 | `threadkeep search <words>` | full text search; every word must match | `threadkeep search migration --project api --since 7d` |
 | `threadkeep sessions` | list sessions, newest first | `threadkeep sessions --since 2026-10-12 --until 2026-10-18` |
 | `threadkeep show <id>` | replay one session; any unique id prefix works | `threadkeep show 3f2a --expand-tools` |
+| `threadkeep import claude-ai <path...>` | import claude.ai export zips, a folder of them or a manifest; rerun safely with a newer export | `threadkeep import claude-ai ~/Downloads/data-export.zip` |
 
 `threadkeep doctor` checks your setup and reports session count, event count and archive size.
 
